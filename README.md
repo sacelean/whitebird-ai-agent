@@ -30,3 +30,8 @@ npm run ask -- '¿Qué jugadores necesitan un abalorio concreto?'
 - Tiny models may perform poorly with many tools. The agent exposes a shortlist of read tools, only one call per question.
 - No Discord adapter yet; integrate later with permissions/rate limiting.
 - Not optimized for simultaneous users. Run one conversation at a time until benchmarking on Oracle A1.
+
+## Oracle Cloud / GitHub Actions
+
+See [deployment instructions](deploy/README.md) for the manual GitHub Actions
+pipeline, VM prerequisites, SSH secrets, runtime checks and rollback.

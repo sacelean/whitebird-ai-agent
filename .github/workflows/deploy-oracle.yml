@@ -1,0 +1,87 @@
+name: Deploy agent to Oracle VM
+
+on:
+  workflow_dispatch:
+    inputs:
+      mcp_ref:
+        description: 'Commit SHA or tag of whitebird-wowaudit-mcp'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: oracle-agent-deployment
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-24.04
+    environment: oracle
+    timeout-minutes: 20
+    steps:
+      - name: Check out agent
+        uses: actions/checkout@v4
+        with:
+          path: whitebird-ai-agent
+          persist-credentials: false
+      - name: Check out MCP client
+        uses: actions/checkout@v4
+        with:
+          repository: sacelean/whitebird-wowaudit-mcp
+          ref: ${{ inputs.mcp_ref }}
+          token: ${{ secrets.MCP_REPO_TOKEN || github.token }}
+          path: whitebird-wowaudit-mcp
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install and test both projects
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd whitebird-wowaudit-mcp
+          npm install --ignore-scripts --no-audit --no-fund
+          npm test
+          cd ../whitebird-ai-agent
+          npm install --ignore-scripts --no-audit --no-fund
+          npm test
+          node --input-type=module -e "await import('@whitebird/wowaudit-mcp')"
+      - name: Package source and resolved dependency locks
+        shell: bash
+        run: |
+          set -euo pipefail
+          git -C whitebird-ai-agent rev-parse HEAD > whitebird-ai-agent/AGENT_REVISION
+          git -C whitebird-wowaudit-mcp rev-parse HEAD > whitebird-ai-agent/MCP_REVISION
+          tar --exclude='.git' --exclude='node_modules' --exclude='.env' \
+            -czf agent-release.tar.gz whitebird-ai-agent whitebird-wowaudit-mcp
+      - name: Deploy over SSH
+        shell: bash
+        env:
+          SSH_HOST: ${{ secrets.ORACLE_SSH_HOST }}
+          SSH_USER: ${{ secrets.ORACLE_SSH_USER }}
+          SSH_KEY: ${{ secrets.ORACLE_SSH_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.ORACLE_SSH_KNOWN_HOSTS }}
+          SSH_PORT: ${{ vars.ORACLE_SSH_PORT || '22' }}
+        run: |
+          set -euo pipefail
+          : "${SSH_HOST:?Missing ORACLE_SSH_HOST}"
+          : "${SSH_USER:?Missing ORACLE_SSH_USER}"
+          : "${SSH_KEY:?Missing ORACLE_SSH_KEY}"
+          : "${SSH_KNOWN_HOSTS:?Missing ORACLE_SSH_KNOWN_HOSTS}"
+          [[ "$SSH_HOST" =~ ^[a-zA-Z0-9][a-zA-Z0-9.-]*$ ]]
+          [[ "$SSH_USER" =~ ^[a-zA-Z_][a-zA-Z0-9_-]*$ ]]
+          [[ "$SSH_PORT" =~ ^[0-9]+$ ]]
+          ssh_dir=$(mktemp -d)
+          trap 'rm -rf "$ssh_dir"' EXIT
+          chmod 700 "$ssh_dir"
+          printf '%s\n' "$SSH_KEY" > "$ssh_dir/key"
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > "$ssh_dir/known_hosts"
+          chmod 600 "$ssh_dir/key" "$ssh_dir/known_hosts"
+          opts=(-i "$ssh_dir/key" -o BatchMode=yes -o StrictHostKeyChecking=yes -o "UserKnownHostsFile=$ssh_dir/known_hosts" -o ConnectTimeout=15)
+          release="${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          target="$SSH_USER@$SSH_HOST"
+          ssh "${opts[@]}" -p "$SSH_PORT" "$target" "mkdir -p \"\$HOME/whitebird/incoming/$release\""
+          scp "${opts[@]}" -P "$SSH_PORT" agent-release.tar.gz "$target:whitebird/incoming/$release/agent-release.tar.gz"
+          ssh "${opts[@]}" -p "$SSH_PORT" "$target" "bash -s -- '$release'" < whitebird-ai-agent/deploy/install-release.sh
