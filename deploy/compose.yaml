@@ -1,0 +1,33 @@
+name: whitebird-model
+
+services:
+  llama:
+    image: ${LLAMA_IMAGE:-ghcr.io/ggml-org/llama.cpp:server}
+    restart: unless-stopped
+    ports:
+      - '127.0.0.1:8080:8080'
+    environment:
+      LLAMA_CACHE: /models
+    volumes:
+      - model-cache:/models
+    command:
+      - '-hf'
+      - 'ggml-org/Qwen3-1.7B-GGUF:Q4_K_M'
+      - '--host'
+      - '0.0.0.0'
+      - '--port'
+      - '8080'
+      - '--alias'
+      - 'local'
+      - '-c'
+      - '4096'
+      - '-t'
+      - '${LLAMA_THREADS:-2}'
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '3'
+
+volumes:
+  model-cache:

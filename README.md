@@ -25,7 +25,7 @@ npm run ask -- '¿Qué jugadores necesitan un abalorio concreto?'
 
 ## Known limitations
 
-- The actual WoWAudit MCP endpoint and OAuth/token requirements **have not been verified**. The MCP client currently supports bearer token auth only. OAuth support must be added if required; don't reuse ChatGPT browser tokens.
+- Use the OAuth-enabled MCP client revision and complete the browser login described in deploy/README.md. Live WoWAudit endpoint, client registration policy and authorization still need verification; do not reuse ChatGPT tokens.
 - Tool selection depends on the local model's ability to follow strict JSON. If the model picks the wrong tool or parameters, the client rejects it; no writes are allowed.
 - Tiny models may perform poorly with many tools. The agent exposes a shortlist of read tools, only one call per question.
 - No Discord adapter yet; integrate later with permissions/rate limiting.

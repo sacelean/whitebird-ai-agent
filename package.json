@@ -3,7 +3,15 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "engines": {"node": ">=20"},
-  "scripts": {"ask": "node src/cli.js", "test": "node --test"},
-  "dependencies": {"@whitebird/wowaudit-mcp": "file:../whitebird-wowaudit-mcp"}
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "ask": "node src/cli.js",
+    "test": "node --test",
+    "login": "node ../whitebird-wowaudit-mcp/src/login.js"
+  },
+  "dependencies": {
+    "@whitebird/wowaudit-mcp": "file:../whitebird-wowaudit-mcp"
+  }
 }

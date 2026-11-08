@@ -42,6 +42,8 @@ jobs:
         run: |
           set -euo pipefail
           cd whitebird-wowaudit-mcp
+          test -f src/oauth.js
+          test -f src/login.js
           npm install --ignore-scripts --no-audit --no-fund
           npm test
           cd ../whitebird-ai-agent
