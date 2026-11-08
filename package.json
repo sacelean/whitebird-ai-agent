@@ -1,0 +1,9 @@
+{
+  "name": "whitebird-ai-agent",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "engines": {"node": ">=20"},
+  "scripts": {"ask": "node src/cli.js", "test": "node --test"},
+  "dependencies": {"@whitebird/wowaudit-mcp": "file:../whitebird-wowaudit-mcp"}
+}
