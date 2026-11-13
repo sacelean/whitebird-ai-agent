@@ -8,7 +8,7 @@ export function validateLocalUrl(urlString = LOCAL_URL) {
   return url;
 }
 
-async function chat(messages, { fetchFn = fetch, url = LOCAL_URL } = {}) {
+export async function chat(messages, { fetchFn = fetch, url = LOCAL_URL } = {}) {
   validateLocalUrl(url);
   const abort = new AbortController();
   const timeout = setTimeout(() => abort.abort(), 120000);
@@ -16,12 +16,15 @@ async function chat(messages, { fetchFn = fetch, url = LOCAL_URL } = {}) {
     const res = await fetchFn(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: process.env.LLAMA_MODEL || 'local', messages, temperature: 0, max_tokens: 350, stream: false }),
+      body: JSON.stringify({ model: process.env.LLAMA_MODEL || 'local', messages, temperature: 0, max_tokens: 350, stream: false,
+        chat_template_kwargs: { enable_thinking: false } }),
       signal: abort.signal
     });
     if (!res.ok) throw new Error(`Local model HTTP error: ${res.status}`);
     const data = await res.json();
-    return data.choices?.[0]?.message?.content || '';
+    const content = data.choices?.[0]?.message?.content;
+    if (typeof content !== 'string' || !content.trim()) throw new Error('Local model returned an empty answer');
+    return content;
   } finally { clearTimeout(timeout); }
 }
 
@@ -49,9 +52,15 @@ export async function askWhitebird(question, client, { chatFn = chat } = {}) {
   const tools = client.listAllowedTools().filter(t=>SHORTLIST.includes(t.name));
   const names = tools.map(t=>t.name);
   if (!tools.length) throw new Error('No supported tools available from WoWAudit');
-  const instructions = tools.map(t=>`${t.name}: ${(t.description||'').slice(0,220)}; input schema: ${JSON.stringify(t.inputSchema||{}).slice(0,1000)}`).join('\n');
+  const instructions = tools.map(t=>{
+    const schema = structuredClone(t.inputSchema || {});
+    // The client injects the configured team; the model must never select it.
+    if (schema.properties) delete schema.properties.team;
+    if (Array.isArray(schema.required)) schema.required = schema.required.filter(key => key !== 'team');
+    return `${t.name}: ${(t.description||'').slice(0,220)}; input schema: ${JSON.stringify(schema).slice(0,1000)}`;
+  }).join('\n');
   const prompt = [
-    {role:'system',content: `You select ONE WoWAudit read-only tool for a Spanish WoW guild question. Reply ONLY with JSON {"tool":"name","arguments":{}}. No markdown. For no fitting tool reply {"tool":null,"arguments":{}}. Use real input schema; never invent event IDs. Team is injected by application. Tools:\n${instructions}`},
+    {role:'system',content: `You select ONE WoWAudit read-only tool for a Spanish WoW guild question. Today is ${new Date().toISOString().slice(0,10)} (UTC). Reply ONLY with JSON {"tool":"name","arguments":{}}. No markdown. For no fitting tool reply {"tool":null,"arguments":{}}. Use real input schema; never invent event IDs. Team is injected by application. Never include a team argument. Omit optional arguments unless the question explicitly needs them. For upcoming events use list_events with empty arguments: it defaults to the next 14 days. Never invent dates. Tools:\n${instructions}`},
     {role:'user',content:question}
   ];
   const raw = await chatFn(prompt);

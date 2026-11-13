@@ -1,5 +1,15 @@
 # Despliegue en Oracle Cloud
 
+## Estado comprobado el 13 de noviembre de 2026
+
+- Release activa en la VM: `20261113153958-1` (despliegue manual por SSH).
+- OAuth, modelo local y conexión MCP verificados; 12 pruebas pasan en la VM.
+- La consulta de próximos eventos ejecuta `list_events` para Whitebird (66082).
+- Pendiente mejorar la presentación: en la prueba real el modelo copió JSON y
+  lo truncó al alcanzar el límite de salida, en lugar de resumirlo en español.
+
+## Procedimiento de despliegue
+
 El workflow `Deploy agent to Oracle VM` instala el agente CLI y el cliente MCP
 por SSH, sin sudo. No crea una VM ni instala el modelo. Compatible con una VM
 Linux ARM64 o x86_64 que tenga Bash, GNU tar/coreutils, Node.js >=22, npm y acceso
@@ -94,7 +104,8 @@ Configura `~/whitebird/shared/agent.env` con `.env.example`: endpoint MCP oficia
 equipo, modelo y rutas OAuth. Elimina `WOWAUDIT_MCP_TOKEN`; ya no se utiliza.
 El endpoint facilitado para esta instalación es `https://wowaudit.com/mcp`,
 ya incluido en `.env.example`.
-No se ha verificado aún el registro de clientes contra el servidor real.
+El registro dinámico, el login OAuth y el listado de herramientas se verificaron
+contra el servidor real desde esta VM el 13 de noviembre de 2026.
 
 Para preparar el primer login sin una release activa, desde tu Mac, en la carpeta
 de este proyecto, copia el cliente local (incluye sus cambios OAuth actuales):
@@ -104,6 +115,10 @@ tar -czf /tmp/whitebird-mcp-login.tar.gz -C ../whitebird-wowaudit-mcp src packag
 scp -i ~/Downloads/ssh-key-2026-10-03.key /tmp/whitebird-mcp-login.tar.gz ubuntu@130.162.51.21:whitebird/mcp-login.tar.gz
 ssh -i ~/Downloads/ssh-key-2026-10-03.key -o ExitOnForwardFailure=yes -L 8787:127.0.0.1:8787 ubuntu@130.162.51.21
 ```
+
+Si el cliente ya está instalado en `~/whitebird-wowaudit-mcp-setup`, reutiliza esa
+carpeta: no necesitas copiarlo ni extraerlo otra vez. Abre el túnel SSH anterior,
+entra en esa carpeta y ejecuta el comando de login con el entorno compartido.
 
 En esa sesión SSH de la VM:
 
