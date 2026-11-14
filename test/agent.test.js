@@ -45,3 +45,25 @@ test('team selection stays with the client and does not mutate server schemas', 
   assert.ok(schema.properties.team);
   assert.deepEqual(schema.required,['team']);
 });
+
+for (const question of ['¿que puedes hacer?', '¿QUÉ PUEDES HACER?', '  qué puedes hacer  ', 'Hola, ¿qué puedes hacer?', '¿Cómo puedes ayudarme?', 'ayuda', 'help']) {
+  test(`help responds without model or WoWAudit calls: ${question}`, async () => {
+    const client = {
+      listAllowedTools: () => [{ name: 'list_events' }, { name: 'loot_history' }, { name: 'update_roster_members' }],
+      callReadTool: () => assert.fail('Help must not call WoWAudit')
+    };
+    const result = await askWhitebird(question, client, { chatFn: () => assert.fail('Help must not call model') });
+    assert.equal(result.tool, null);
+    assert.match(result.answer, /próximos eventos/);
+    assert.match(result.answer, /historial de loot/);
+    assert.doesNotMatch(result.answer, /abalorios|update_roster_members/);
+  });
+}
+
+test('help explains when no supported tools are available', async () => {
+  const result = await askWhitebird('¿Qué puedes hacer?', { listAllowedTools: () => [] }, {
+    chatFn: () => assert.fail('Help must not call model')
+  });
+  assert.equal(result.tool, null);
+  assert.match(result.answer, /no tengo herramientas/);
+});

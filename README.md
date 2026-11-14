@@ -31,6 +31,23 @@ Provide WoWAudit endpoint and authentication variables from `.env.example` in yo
 npm run ask -- '¿Qué jugadores necesitan un abalorio concreto?'
 ```
 
+Las preguntas de ayuda como «¿Qué puedes hacer?» reciben una respuesta directa con las herramientas disponibles, sin consultar el modelo ni ejecutar consultas a WoWAudit.
+
+## Respuestas legibles
+
+Después de consultar WoWAudit, el agente convierte los datos en texto con etiquetas
+legibles y pide al modelo una explicación en español. Si la explicación falla,
+está vacía o contiene JSON o bloques de código, muestra el texto formateado como
+respaldo. Las respuestas MCP con JSON en bloques de texto también se decodifican.
+El contrato sigue siendo `{tool, answer}`; panel y Discord muestran `answer`.
+
+Se mantiene el límite de 12.000 caracteres del resultado original. Dentro de ese
+límite, la vista para el modelo y el respaldo se acotan a 6.000 caracteres,
+12 registros por lista y detalles de longitud/profundidad limitada. Si se omite
+información, la respuesta incluye un aviso de vista parcial. Las fechas se
+conservan como las devuelve WoWAudit, sin inferir una zona horaria. La explicación
+del modelo sigue necesitando validación con consultas reales.
+
 ## Known limitations
 
 - Use the OAuth-enabled MCP client revision and complete the browser login described in deploy/README.md. OAuth login and tool discovery against `https://wowaudit.com/mcp` were verified on Oracle on 2026-11-13; do not reuse ChatGPT tokens.
