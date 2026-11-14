@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="es">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Whitebird · Centro de control</title><link rel="icon" type="image/png" href="/logo.png"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&display=swap" rel="stylesheet"><meta name="theme-color" content="#080e1b"><link rel="stylesheet" href="/style.css"><script type="module" src="/app.js"></script></head>
+<body>
+<aside><a class="brand" href="/"><img class="brand-logo" src="/logo.png" alt="" width="52" height="52"><span>WHITEBIRD<small>Centro de control</small></span></a><label class="project-label" for="project">BOT / ADDON</label><select id="project" aria-label="Bot a configurar"><option value="wow">WoW Role Sync</option></select><p id="project-help"></p><div class="nav-label">MÓDULOS DEL BOT</div><nav aria-label="Módulos"><button class="active" data-page="overview">◈ &nbsp; Vista general</button><div id="navigation"></div></nav><div class="aside-bottom"><span class="dot"></span> Administración local<small>WoW · Discord · Whitebird</small></div></aside>
+<main><header><span>Solución Whitebird <span class="muted">/</span> <span id="breadcrumb">Vista general</span></span><button id="reload" class="secondary">↻ Actualizar</button></header>
+<section class="intro"><div class="eyebrow">WHITEBIRD / CONFIGURACIÓN</div><h1 id="title">Tu servidor, en un solo lugar.</h1><p id="subtitle">Consulta la configuración y organiza las funciones de la hermandad por módulos.</p></section>
+<details class="panel"><summary>Consultar al agente de IA</summary>
+<p>Pregunta sobre eventos, auditoría o loot de Whitebird. Solo consulta datos de WoWAudit.</p>
+<form id="agent-form"><label for="agent-question">Tu pregunta</label><textarea id="agent-question" maxlength="1000" required placeholder="¿Qué eventos tenemos próximamente?"></textarea><button id="agent-submit" class="primary" disabled>Consultar</button></form>
+<p id="agent-status" role="status" aria-live="polite">Comprobando configuración del agente…</p><pre id="agent-answer" class="daily-report"></pre>
+</details><script type="module" src="/agent.js"></script>
+<div id="notice" role="status" aria-live="polite"></div><div id="content"><p>Cargando configuración…</p></div>
+<footer><span id="changes">Sin cambios pendientes</span><div><button id="restart" class="secondary" disabled>Aplicar guardado y reiniciar</button><button id="discard" class="secondary" disabled>Descartar</button><button id="save" class="primary" disabled>Guardar configuración</button></div></footer>
+</main>
+</body></html>
+

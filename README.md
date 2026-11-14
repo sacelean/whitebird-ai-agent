@@ -2,6 +2,14 @@
 
 A simple, **read-only** natural-language assistant for WoWAudit MCP. Uses a local `llama-server` OpenAI-style chat endpoint at `127.0.0.1:8080`. No paid LLM API and no publicly exposed model listener.
 
+## Control panel
+
+The agent also provides a loopback HTTP service (`npm start`) for the Whitebird
+control panel. See [panel integration](docs/control-panel.md) for configuration,
+installation and verification. The CLI remains available when the service is
+stopped. Do not run the CLI or OAuth login concurrently with the service: they
+share the OAuth session store.
+
 ## Setup (Node >= 20)
 
 From `whitebird-wowaudit-mcp`: `npm install && npm test`.
@@ -28,7 +36,7 @@ npm run ask -- '¿Qué jugadores necesitan un abalorio concreto?'
 - Use the OAuth-enabled MCP client revision and complete the browser login described in deploy/README.md. OAuth login and tool discovery against `https://wowaudit.com/mcp` were verified on Oracle on 2026-11-13; do not reuse ChatGPT tokens.
 - Tool selection depends on the local model's ability to follow strict JSON. If the model picks the wrong tool or parameters, the client rejects it; no writes are allowed.
 - Tiny models may perform poorly with many tools. The agent exposes a shortlist of read tools, only one call per question.
-- No Discord adapter yet; integrate later with permissions/rate limiting.
+- Discord adapter: see [setup and activation](docs/discord.md) for `/whitebird-ask`, role/channel restrictions and private replies. Requires the local agent service.
 - Not optimized for simultaneous users. Run one conversation at a time until benchmarking on Oracle A1.
 
 ## Oracle Cloud / GitHub Actions

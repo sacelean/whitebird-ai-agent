@@ -200,5 +200,8 @@ mv -Tf "$HOME/whitebird/rollback" "$HOME/whitebird/current"
 ```
 
 No se borran automáticamente releases; elimina manualmente las antiguas cuando
-hayas comprobado el funcionamiento. El agente es un CLI, no un servicio HTTP o
-un bot de Discord; este despliegue no crea un daemon para el agente.
+hayas comprobado el funcionamiento. El instalador mantiene el CLI y no crea ni
+reinicia el servicio HTTP. Para consultar desde el panel, sigue
+[la guía de integración](../docs/control-panel.md). Si el servicio ya está
+instalado, detenlo antes de desplegar (las comprobaciones usan la misma sesión
+OAuth) y arráncalo al terminar.

@@ -7,11 +7,15 @@
     "node": ">=20"
   },
   "scripts": {
+    "start": "node src/server.js",
+    "discord": "node src/discord.js",
+    "discord:register": "node src/discord.js --register",
     "ask": "node src/cli.js",
     "test": "node --test",
     "login": "node ../whitebird-wowaudit-mcp/src/login.js"
   },
   "dependencies": {
-    "@whitebird/wowaudit-mcp": "file:../whitebird-wowaudit-mcp"
+    "@whitebird/wowaudit-mcp": "file:../whitebird-wowaudit-mcp",
+    "discord.js": "^14.28.1"
   }
 }

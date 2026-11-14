@@ -1,0 +1,21 @@
+[Unit]
+Description=Whitebird read-only AI agent
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ubuntu
+Group=ubuntu
+EnvironmentFile=/home/ubuntu/whitebird/shared/agent.env
+WorkingDirectory=/home/ubuntu/whitebird/current/whitebird-ai-agent
+ExecStart=/usr/bin/node /home/ubuntu/whitebird/current/whitebird-ai-agent/src/server.js
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=300
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

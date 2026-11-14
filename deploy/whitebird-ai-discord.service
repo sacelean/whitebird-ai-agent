@@ -1,0 +1,20 @@
+[Unit]
+Description=Whitebird Discord agent adapter
+After=network-online.target whitebird-ai-agent.service
+Wants=network-online.target whitebird-ai-agent.service
+
+[Service]
+Type=simple
+User=ubuntu
+Group=ubuntu
+EnvironmentFile=/home/ubuntu/whitebird/shared/discord.env
+WorkingDirectory=/home/ubuntu/whitebird/current/whitebird-ai-agent
+ExecStart=/usr/bin/node /home/ubuntu/whitebird/current/whitebird-ai-agent/src/discord.js
+Restart=on-failure
+RestartSec=5
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
