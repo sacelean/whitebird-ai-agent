@@ -1,11 +1,13 @@
 name: Deploy agent to Oracle VM
 
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
     inputs:
       mcp_ref:
-        description: 'Commit SHA or tag of whitebird-wowaudit-mcp'
-        required: true
+        description: 'MCP commit SHA or tag (empty uses deploy/mcp-ref)'
+        required: false
         type: string
 
 permissions:
@@ -26,11 +28,21 @@ jobs:
         with:
           path: whitebird-ai-agent
           persist-credentials: false
+      - name: Select MCP revision
+        id: mcp
+        shell: bash
+        env:
+          REQUESTED_REF: ${{ inputs.mcp_ref }}
+        run: |
+          set -euo pipefail
+          ref="${REQUESTED_REF:-$(cat whitebird-ai-agent/deploy/mcp-ref)}"
+          [[ "$ref" =~ ^[a-zA-Z0-9][a-zA-Z0-9._/-]*$ ]] || { echo 'Invalid MCP ref'; exit 1; }
+          printf 'ref=%s\n' "$ref" >> "$GITHUB_OUTPUT"
       - name: Check out MCP client
         uses: actions/checkout@v4
         with:
           repository: sacelean/whitebird-wowaudit-mcp
-          ref: ${{ inputs.mcp_ref }}
+          ref: ${{ steps.mcp.outputs.ref }}
           token: ${{ secrets.MCP_REPO_TOKEN || github.token }}
           path: whitebird-wowaudit-mcp
           persist-credentials: false
