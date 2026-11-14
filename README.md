@@ -58,5 +58,5 @@ del modelo sigue necesitando validación con consultas reales.
 
 ## Oracle Cloud / GitHub Actions
 
-See [deployment instructions](deploy/README.md) for the manual GitHub Actions
-pipeline, VM prerequisites, SSH secrets, runtime checks and rollback.
+See [deployment instructions](deploy/README.md) for the GitHub Actions
+pipeline (automatic on updates to main, with optional manual runs), VM prerequisites, SSH secrets, service restarts, runtime checks and rollback.

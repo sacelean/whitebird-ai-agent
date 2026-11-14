@@ -62,7 +62,9 @@ equipo configurado. No hay conversaciones persistentes ni historial.
 Comprobar rechazo desde otro canal/rol, agente parado y consulta simultánea
 desde el panel. Los fallos muestran un mensaje genérico sin credenciales.
 
-Parar este servicio y el agente antes de actualizar la release o renovar OAuth;
-arrancarlos después y repetir una consulta real. Para rollback a una release sin
+La pipeline de main detiene y arranca los servicios activos o habilitados al
+actualizar la release, y vuelve a registrar el comando si gestiona Discord.
+Para renovar OAuth o actualizar fuera del instalador, parar este servicio y el
+agente antes, arrancarlos después y repetir una consulta real. Para rollback a una release sin
 adaptador, mantener Discord detenido y eliminar `/whitebird-ask` desde la aplicación
 si ya no se usa. No reutilizar el token de un bot que ya esté en ejecución.

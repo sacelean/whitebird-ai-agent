@@ -24,8 +24,8 @@ no verifica la salud del modelo ni vigencia de OAuth.
 ## Instalar el agente
 
 1. Instalar una release con este código y el cliente MCP OAuth, siguiendo
-   [la guía existente](../deploy/README.md). El instalador CLI no instala ni
-   reinicia el nuevo servicio; requiere los pasos siguientes.
+   [la guía existente](../deploy/README.md). El instalador no crea nuevas unidades; requiere los pasos siguientes para
+   la primera instalación. Después gestiona los servicios activos o habilitados.
 2. Completar el login OAuth antes de arrancar el servicio. Añadir a
    `~/whitebird/shared/agent.env` `AGENT_PORT=3090` y `AGENT_API_TOKEN` con un
    secreto aleatorio de al menos 32 caracteres (por ejemplo, generado con
@@ -47,9 +47,10 @@ Debe existir una única instancia que use el almacén OAuth. Parar el servicio
 antes de usar el CLI o renovar el login manualmente. El apagado espera la
 consulta en curso antes de cerrar MCP.
 
-Al actualizar una release, parar el servicio antes de ejecutar la pipeline
-existente: sus comprobaciones también usan OAuth. Después reiniciarlo y
-comprobar la consulta desde el panel. Para rollback, restaurar la release y
+La pipeline al actualizar main detiene y arranca los servicios activos o
+habilitados, evitando concurrencia OAuth durante sus comprobaciones. Después
+comprobar una consulta desde el panel. Para despliegues fuera del instalador,
+parar primero los servicios y arrancarlos al terminar. Para rollback, restaurar la release y
 reiniciar el servicio. Una release anterior sin `src/server.js` requiere dejar
 el servicio parado y desactivar la integración del panel.
 

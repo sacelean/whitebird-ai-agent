@@ -11,7 +11,10 @@
 ## Procedimiento de despliegue
 
 El workflow `Deploy agent to Oracle VM` instala el agente CLI y el cliente MCP
-por SSH, sin sudo. No crea una VM ni instala el modelo. Compatible con una VM
+por SSH al actualizar `main` (incluido cada merge), y también permite ejecución
+manual. No crea una VM ni instala el modelo. Para gestionar servicios ya activos
+o habilitados requiere permisos `sudo -n` de start/stop sobre
+`whitebird-ai-agent.service` y `whitebird-ai-discord.service`. Compatible con una VM
 Linux ARM64 o x86_64 que tenga Bash, GNU tar/coreutils, Node.js >=22, npm y acceso
 a npm y WoWAudit por HTTPS. Node debe estar disponible en sesiones SSH no
 interactivas (no basta una configuración de nvm en el terminal interactivo).
@@ -98,7 +101,8 @@ y [modelo GGUF](https://huggingface.co/ggml-org/Qwen3-1.7B-GGUF).
 
 Usa la revisión del cliente MCP que incluye `src/oauth.js` y `src/login.js`.
 Los cambios de ese repositorio deben subirse a GitHub y su SHA debe usarse como
-`mcp_ref` en la pipeline. La pipeline comprueba su presencia antes del despliegue.
+`mcp_ref` en una ejecución manual o fijarse en `deploy/mcp-ref` para los
+despliegues automáticos. La pipeline comprueba su presencia antes del despliegue.
 
 Configura `~/whitebird/shared/agent.env` con `.env.example`: endpoint MCP oficial,
 equipo, modelo y rutas OAuth. Elimina `WOWAUDIT_MCP_TOKEN`; ya no se utiliza.
@@ -174,34 +178,54 @@ repositorio privado.
 
 ## Ejecutar y comprobar
 
-En Actions, abre `Deploy agent to Oracle VM` → Run workflow. Selecciona la rama
-del agente e introduce en `mcp_ref` un SHA de commit del cliente MCP (recomendado)
-o un tag. Se instalan y prueban ambos proyectos en el runner. Se empaquetan sus
-package-lock generados y los SHA de origen; la VM usa `npm ci` para instalar las
-mismas resoluciones en su propia arquitectura.
+Cada actualización de `main`, incluidos los merges, lanza `Deploy agent to Oracle VM`.
+Los despliegues automáticos usan el SHA del cliente MCP fijado en `deploy/mcp-ref`;
+actualiza ese archivo en un PR para cambiar de versión del cliente. No se sigue
+la rama main de MCP automáticamente.
 
-La VM vuelve a ejecutar las pruebas y comprueba el modelo y la conexión MCP antes
-de activar la release. No ejecuta consultas de jugadores durante el despliegue.
-Si un control falla, `current` sigue apuntando a la versión anterior y el job falla.
-La comprobación de salud no verifica la calidad de las respuestas del modelo.
+También puedes usar Actions → `Deploy agent to Oracle VM` → Run workflow.
+`mcp_ref` es opcional: vacío usa el archivo fijado; un SHA o tag permite elegir
+otra versión para esa ejecución. Se conserva el environment `oracle` y sus reglas
+de protección; si exige aprobación, el job esperará esa aprobación.
 
-Después, por SSH:
+La pipeline prueba ambos proyectos, empaqueta fuentes, locks y SHA, y transmite
+la release por SSH. La VM usa `npm ci`, repite las pruebas y toma un bloqueo
+exclusivo de despliegue. Las instalaciones y pruebas se realizan antes de detener
+los servicios, para reducir la interrupción.
 
-```bash
-~/whitebird/bin/whitebird-ask '¿Qué loot hemos recibido?'
-```
+Si los servicios del agente/Discord están activos o habilitados, el instalador:
+
+1. Comprueba permisos no interactivos para start/stop y los archivos necesarios.
+2. Detiene Discord y después el agente, antes de las comprobaciones OAuth.
+3. Comprueba modelo y MCP y registra `/whitebird-ask` si gestiona Discord.
+4. Activa `current`, arranca el agente, verifica `/health` autenticado y arranca
+   Discord. Comprueba que ambos procesos siguen activos.
+
+Si falla después de detener servicios, intenta recuperar el enlace anterior y
+arrancar los servicios gestionados, manteniendo el job como fallido. No revierte
+el registro remoto del comando Discord. Un fallo de permisos o recuperación
+puede requerir intervención manual; revisar el log del job. Los servicios
+inactivos y deshabilitados se mantienen parados; el instalador no instala ni
+habilita nuevas unidades systemd ni modifica sus archivos de entorno.
+
+La comprobación de Discord confirma proceso activo, no una consulta real ni la
+recepción del evento de conexión. La comprobación del modelo/MCP no acredita la
+calidad de sus respuestas. Para una consulta manual CLI, detener primero ambos
+servicios y arrancarlos al terminar para no compartir simultáneamente OAuth.
 
 Las versiones quedan en `~/whitebird/releases/<run-id>-<attempt>`. Para rollback,
-como el mismo usuario, elige una versión anterior existente:
+detén primero los dos servicios y, como el mismo usuario, elige una versión
+anterior existente:
 
 ```bash
 ln -s "$HOME/whitebird/releases/ID-ANTERIOR" "$HOME/whitebird/rollback"
 mv -Tf "$HOME/whitebird/rollback" "$HOME/whitebird/current"
 ```
 
-No se borran automáticamente releases; elimina manualmente las antiguas cuando
-hayas comprobado el funcionamiento. El instalador mantiene el CLI y no crea ni
-reinicia el servicio HTTP. Para consultar desde el panel, sigue
-[la guía de integración](../docs/control-panel.md). Si el servicio ya está
-instalado, detenlo antes de desplegar (las comprobaciones usan la misma sesión
-OAuth) y arráncalo al terminar.
+Arranca después los servicios compatibles con la versión restaurada y verifica
+su estado. No se borran automáticamente releases. Para la instalación inicial
+de los servicios y la conexión del panel, sigue
+[la guía de integración](../docs/control-panel.md). Las plantillas systemd usan
+`--preserve-symlinks-main` para arrancar correctamente mediante `current`.
+Si las unidades existentes no tienen ese argumento, actualízalas una vez y
+ejecuta `sudo systemctl daemon-reload` antes del primer despliegue automático.
