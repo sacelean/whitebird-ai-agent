@@ -79,6 +79,11 @@ un ganador si faltan registros. Véanse [alcance y diagnóstico](docs/loot-ranki
 Los fallos al seleccionar una herramienta con el modelo y los fallos al consultar
 WoWAudit reciben mensajes distintos, sin mostrar detalles privados.
 
+Las menciones reales de Discord usan el personaje y reino vinculados en el panel;
+los nombres sin @ se consultan directamente como personajes. Por ejemplo:
+«cuantos items ha looteado @usuario» o «cuantos items ha looteado Nombre-reino».
+Requiere desplegar primero el panel actualizado; no hay variables nuevas.
+
 ## Known limitations
 
 - Use the OAuth-enabled MCP client revision and complete the browser login described in deploy/README.md. OAuth login and tool discovery against `https://wowaudit.com/mcp` were verified on Oracle on 2026-11-13; do not reuse ChatGPT tokens.

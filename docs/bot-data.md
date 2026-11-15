@@ -95,3 +95,7 @@ panel sin llamar al modelo; se mantiene el mismo contrato de herramientas.
 «Último/última» sin cantidad solicita una fila; los límites numéricos prevalecen.
 Se devuelve personaje y reino guardados, no identidad Discord ni roster en vivo.
 La fecha corresponde a la decisión registrada, no acredita su hora de finalización.
+
+Las menciones Discord se resuelven con wow_resolve_user del panel sobre wow_links.
+Los filtros realm+character identifican un nombre exacto y reino, sin coincidencia
+parcial. Ver [consultas por personaje](loot-ranking.md).
