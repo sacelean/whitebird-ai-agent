@@ -67,3 +67,31 @@ test('help explains when no supported tools are available', async () => {
   assert.equal(result.tool, null);
   assert.match(result.answer, /no tengo herramientas/);
 });
+
+for (const question of [
+  'en el bot de wow role sync, como funciona la sincronización de roles?',
+  '¿Cómo funciona la sincronización de roles?',
+  'Explícame los roles de profesión en WoW Role Sync',
+  '¿Cómo sincroniza los rangos el bot de WoW?'
+]) {
+  test(`project documentation bypasses the model and MCP: ${question}`, async () => {
+    const client = { listAllowedTools: () => assert.fail('Must not discover WoWAudit tools for documentation') };
+    const result = await askWhitebird(question, client, { chatFn: () => assert.fail('Must not wait for the model') });
+    assert.equal(result.tool, null);
+    assert.match(result.answer, /WOW_RANK_ROLE_IDS/);
+    assert.match(result.answer, /conserva los anteriores/);
+    assert.match(result.answer, /salida confirmada/);
+    assert.match(result.answer, /por defecto 04:00/);
+    assert.match(result.answer, /sincronizacion-usuario/);
+    assert.ok(result.answer.length <= 1900, 'Discord must display the complete explanation');
+  });
+}
+
+test('cauldron documentation gets an immediate project answer', async () => {
+  const result = await askWhitebird('¿Cómo funcionan los calderos en el bot de WoW?', {}, {
+    chatFn: () => assert.fail('Unsupported project help must not wait for WoWAudit selection')
+  });
+  assert.equal(result.tool, null);
+  assert.match(result.answer, /calderos-asignar/);
+  assert.doesNotMatch(result.answer, /Se ejecuta diariamente/);
+});

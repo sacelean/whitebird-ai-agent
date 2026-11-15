@@ -33,6 +33,41 @@ npm run ask -- '¿Qué jugadores necesitan un abalorio concreto?'
 
 Las preguntas de ayuda como «¿Qué puedes hacer?» reciben una respuesta directa con las herramientas disponibles, sin consultar el modelo ni ejecutar consultas a WoWAudit.
 
+## Ayuda de los bots de Whitebird
+
+El agente explica WoW Role Sync, Recruitment, Ruleta de alters, Whitebird IA y
+el control pane desde el mismo servicio usado por panel y Discord. Puedes pedir
+una descripción general o preguntar por una función, comando, permisos o
+configuración. Por ejemplo:
+
+- «¿Cómo funciona Recruitment?» o «¿Cómo se acepta un apply?».
+- «¿Cómo funciona el ranking de alters?».
+- «¿Cómo se configuran los roles de WoW Role Sync?».
+- «¿Cómo funcionan los calderos o las propuestas BIS?».
+- «¿Cómo se usa Whitebird IA desde Discord?».
+- «¿Qué bots conoces?».
+
+src/project-knowledge.js contiene resúmenes revisados contra documentación y
+código el 2026-11-15. src/project-help.js identifica el componente y el tema y
+responde antes de seleccionar herramientas MCP o llamar al modelo. El contrato
+sigue siendo {tool: null, answer}. Los textos caben completos en Discord.
+
+El panel puede enviar project como contexto opcional en POST /ask, con uno de
+wow, recruitment, roulette, agent, agent-discord o panel. Sirve para preguntas
+como «¿Cómo funciona?» al tener seleccionado un componente. Los nombres
+explícitos tienen prioridad. En Discord, indica el bot o su comando. Cada
+pregunta se procesa por separado.
+
+Las fuentes revisadas son README.md, src/wow-sync.js y src/index.js de
+whitebird-wow-role-sync e0a4f9f; README.md, src/index.js y src/register-commands.js
+de whitebird-recruitment-bot eb9a3f9; README.md y src/register-commands.js de
+sacelean/whitebird-wow-wheel en main; README.md y docs/ai-agent.md del panel, y
+el código del propio agente. Los campos source de cada proyecto registran las
+fuentes. Revisa los resúmenes cuando cambie el comportamiento de esos proyectos.
+La instalación efectiva y los errores reales se comprueban con el diagnóstico
+del panel. Esta ayuda es un catálogo curado de funcionamiento y comandos, sin
+lectura automática de repositorios ni historial conversacional.
+
 ## Respuestas legibles
 
 Después de consultar WoWAudit, el agente convierte los datos en texto con etiquetas

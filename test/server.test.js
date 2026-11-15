@@ -46,3 +46,21 @@ test('API preserves the response contract for panel and Discord consumers', asyn
   assert.equal(response.status, 200);
   assert.deepEqual(await response.json(), { tool: 'list_events', answer: 'Próximos eventos' });
 });
+
+test('HTTP documentation uses optional project context and rejects unknown project IDs', async t => {
+  const server = createAgentServer({ client: { listAllowedTools: () => assert.fail('Help must bypass MCP') }, token });
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  t.after(() => new Promise(resolve => server.close(resolve)));
+  const request = project => fetch(`http://127.0.0.1:${server.address().port}/ask`, {
+    method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ question: '¿Cómo funciona?', project })
+  });
+  for (const project of ['wow', 'recruitment', 'roulette', 'agent', 'agent-discord', 'panel']) {
+    const response = await request(project);
+    assert.equal(response.status, 200);
+    const result = await response.json();
+    assert.equal(result.tool, null);
+    assert.ok(result.answer.length > 100);
+  }
+  for (const project of ['unknown', '../../secret', {}, null]) assert.equal((await request(project)).status, 400);
+});

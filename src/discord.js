@@ -14,7 +14,7 @@ export function discordConfig(env = process.env) {
 }
 
 export const command = {
-  name: 'whitebird-ask', description: 'Consulta al agente de Whitebird sobre WoWAudit',
+  name: 'whitebird-ask', description: 'Pregunta sobre los bots de Whitebird y consulta WoWAudit',
   options: [{ type: 3, name: 'pregunta', description: 'Tu pregunta (solo lectura)', required: true, min_length: 1, max_length: 1000 }]
 };
 

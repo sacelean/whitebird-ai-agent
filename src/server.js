@@ -2,6 +2,7 @@ import http from 'node:http';
 import { timingSafeEqual } from 'node:crypto';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { PROJECT_IDS } from './project-help.js';
 import { askWhitebird } from './agent.js';
 
 export function createAgentServer({ client, token, port = 3090, ask = askWhitebird } = {}) {
@@ -32,11 +33,12 @@ export function createAgentServer({ client, token, port = 3090, ask = askWhitebi
       input = JSON.parse(Buffer.concat(chunks).toString('utf8'));
     } catch { return send(res, 400, { error: 'Invalid JSON' }); }
     if (!input || typeof input.question !== 'string' || !input.question.trim() || input.question.trim().length > 1000) return send(res, 400, { error: 'Question must contain 1-1000 characters' });
+    if (input.project !== undefined && !PROJECT_IDS.includes(input.project)) return send(res, 400, { error: 'Unknown project' });
     // Reject excess work rather than accumulate unbounded, potentially stale queries.
     if (busy) return send(res, 429, { error: 'El agente está ocupado. Espera a que termine la consulta actual.' });
     busy = true;
     try {
-      const result = await ask(input.question.trim(), client);
+      const result = await ask(input.question.trim(), client, { project: input.project });
       send(res, 200, result);
     } catch {
       // Never send upstream errors, OAuth details or model data to the caller.

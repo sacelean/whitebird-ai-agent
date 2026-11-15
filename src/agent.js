@@ -1,3 +1,4 @@
+import { projectHelp } from './project-help.js';
 import { formatToolResult, isReadableAnswer } from './result-format.js';
 
 const LOCAL_URL = process.env.LLAMA_CHAT_URL || 'http://127.0.0.1:8080/v1/chat/completions';
@@ -66,14 +67,16 @@ function isHelpQuestion(question) {
   return /^(?:hola )?(?:que puedes hacer|que sabes hacer|que funciones tienes|que herramientas tienes|como puedes ayudarme|en que puedes ayudarme|ayuda|help)(?: por favor)?$/.test(text);
 }
 
-export async function askWhitebird(question, client, { chatFn = chat } = {}) {
+export async function askWhitebird(question, client, { chatFn = chat, project } = {}) {
   if (!question || question.length > 1000) throw new Error('Question must contain 1-1000 characters');
+  const documentation = projectHelp(question, project);
+  if (documentation) return documentation;
   const tools = client.listAllowedTools().filter(t=>SHORTLIST.includes(t.name));
   if (isHelpQuestion(question)) {
     const capabilities = tools.map(tool => `• ${CAPABILITIES[tool.name]}`).join('\n');
     return { tool: null, answer: capabilities
-      ? `Puedo consultar datos de WoWAudit en modo solo lectura:\n${capabilities}\n\nPor ejemplo: «¿Qué eventos tenemos próximamente?» o «¿Qué loot hemos recibido?». No modifico datos ni asigno loot.`
-      : 'Soy un asistente de WoWAudit de solo lectura. Ahora no tengo herramientas de consulta disponibles.' };
+      ? `Puedo consultar datos de WoWAudit en modo solo lectura:\n${capabilities}\n\nTambién puedo explicar WoW Role Sync, Recruitment, Ruleta, Whitebird IA y el control pane. Indica el bot y la función.\n\nPor ejemplo: «¿Qué eventos tenemos próximamente?» o «¿Qué loot hemos recibido?». No modifico datos ni asigno loot.`
+      : 'Puedo explicar WoW Role Sync, Recruitment, Ruleta, Whitebird IA y el control pane. Indica el bot y la función. Ahora no tengo herramientas de consulta WoWAudit disponibles.' };
   }
   const names = tools.map(t=>t.name);
   if (!tools.length) throw new Error('No supported tools available from WoWAudit');

@@ -16,7 +16,10 @@ en loopback:8080. No abrir estos puertos en Oracle.
 Entrada JSON: `{"question":"¿Qué eventos tenemos próximamente?"}`.
 Salida JSON: `{"tool":"list_events","answer":"…"}` (tool también admite null).
 Preguntas: 1–1000 caracteres después de quitar espacios externos; cuerpo máximo
-8192 bytes. Solo una consulta en curso: HTTP 429 si está ocupado, sin cola
+8192 bytes. Admite también project opcional con wow, recruitment, roulette,
+agent, agent-discord o panel para contextualizar preguntas de ayuda. El nombre
+del componente indicado en la pregunta tiene prioridad. Las respuestas de ayuda
+usan tool=null y los resúmenes documentados del agente. Solo una consulta en curso: HTTP 429 si está ocupado, sin cola
 persistente ni reintentos automáticos. Un fallo del modelo/MCP devuelve 502 sin
 detalles internos. `/health` exige el mismo Bearer e indica proceso activo y busy;
 no verifica la salud del modelo ni vigencia de OAuth.
@@ -98,3 +101,13 @@ El diagnóstico se ejecuta en el backend del panel y funciona aunque el agente o
 el modelo estén caídos. Las consultas WoWAudit utilizan la API /ask de este
 repositorio. La vigencia OAuth y la calidad de las respuestas requieren una
 consulta real.
+
+
+## Explicar los bots desde el chat
+
+El panel envía las preguntas de funcionamiento al mismo agente que usa Discord.
+El componente seleccionado viaja como project opcional. Puedes preguntar «¿Cómo
+funciona?» o «¿Qué permisos necesita?» tras seleccionar un bot, o indicar otro
+por su nombre en la pregunta. La ayuda usa el catálogo descrito en el README
+del agente. Las preguntas de errores y diagnóstico conservan el recorrido local
+del panel. Requiere incorporar el enrutado correspondiente en Whitebird-control-pane.

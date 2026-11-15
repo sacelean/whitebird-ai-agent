@@ -68,3 +68,16 @@ Para renovar OAuth o actualizar fuera del instalador, parar este servicio y el
 agente antes, arrancarlos después y repetir una consulta real. Para rollback a una release sin
 adaptador, mantener Discord detenido y eliminar `/whitebird-ask` desde la aplicación
 si ya no se usa. No reutilizar el token de un bot que ya esté en ejecución.
+
+
+## Ayuda sobre los bots
+
+/whitebird-ask permite preguntar por el funcionamiento de WoW Role Sync,
+Recruitment, Ruleta, Whitebird IA y el control pane. Indica el nombre del bot o
+un comando, por ejemplo «¿Cómo se acepta un apply?», «¿Cómo funciona el ranking
+de alters?» o «¿Cómo sincroniza roles WoW Role Sync?». «¿Qué bots conoces?»
+muestra el catálogo. Se usa el mismo conocimiento documentado del servicio del
+agente que en el panel. Las preguntas son independientes. La explicación de
+funcionamiento se responde directamente y conserva los límites de acceso y las
+respuestas privadas del adaptador. La descripción actualizada de /whitebird-ask
+se aplica al registrar de nuevo el comando con el procedimiento anterior.

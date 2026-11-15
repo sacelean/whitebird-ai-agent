@@ -47,3 +47,41 @@ test('upstream busy status and oversized answers are adapted to Discord', async 
     assert.match(i.messages[1].content, response.status === 429 ? /ocupado/ : /recortada/);
   }
 });
+
+test('Discord answers the reported role-sync question through the real agent without model or MCP work', async t => {
+  const question = 'en el bot de wow role sync, como funciona la sincronización de roles?';
+  const client = { listAllowedTools: () => assert.fail('Documentation must bypass MCP discovery') };
+  const server = createAgentServer({ client, token: config.agentToken });
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  t.after(() => new Promise(resolve => server.close(resolve)));
+  const handle = createDiscordHandler({ ...config, url: `http://127.0.0.1:${server.address().port}` });
+  const i = interaction({ options: { getString: () => question } });
+  await handle(i);
+  assert.equal(i.messages.length, 2);
+  assert.match(i.messages[1].content, /WOW_RANK_ROLE_IDS/);
+  assert.match(i.messages[1].content, /funcionamiento documentado/);
+  assert.doesNotMatch(i.messages[1].content, /recortada|No se pudo consultar/);
+  assert.deepEqual(i.messages[1].allowedMentions, { parse: [] });
+});
+
+test('Discord explains each bot through the shared HTTP agent with complete private answers', async t => {
+  const client = { listAllowedTools: () => assert.fail('Bot explanations must bypass MCP') };
+  const server = createAgentServer({ client, token: config.agentToken });
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  t.after(() => new Promise(resolve => server.close(resolve)));
+  const handle = createDiscordHandler({ ...config, url: `http://127.0.0.1:${server.address().port}` });
+  const questions = [
+    ['¿Cómo funciona Recruitment?', /New Apply/],
+    ['¿Cómo funciona la ruleta?', /13/],
+    ['¿Cómo funciona Whitebird IA?', /mismo servicio/],
+    ['¿Cómo funciona el control pane?', /Selecciona el componente/]
+  ];
+  for (const [question, expected] of questions) {
+    const i = interaction({ user: { id: question }, options: { getString: () => question } });
+    await handle(i);
+    assert.equal(i.messages[0].flags, 64);
+    assert.match(i.messages[1].content, expected);
+    assert.doesNotMatch(i.messages[1].content, /recortada|No se pudo consultar/);
+    assert.deepEqual(i.messages[1].allowedMentions, { parse: [] });
+  }
+});
