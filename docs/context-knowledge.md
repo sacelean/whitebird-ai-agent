@@ -80,4 +80,6 @@ Tras un rollback, volver a publicar la documentación que corresponda a la revis
 restaurada. No conservar documentación de la versión nueva como si fuera actual.
 Los datos reales, logs y configuración se comprueban con las herramientas del panel.
 
-Esta migración se prepara en PR; no configura secretos ni despliega servicios.
+El flujo de recogida GitHub está implementado en main. Su evidencia de ejecución se registra en Whitebird-context/STATUS.md. La recogida desde carpetas locales de la VM no está implementada.
+
+La corrección de redespliegues antiguos y los planes de revisión de contenido y temas dinámicos se describen en Whitebird-context/knowledge/IMPROVEMENT-PLAN.md. Las propuestas de contenido/temas no están implementadas en esta revisión.
