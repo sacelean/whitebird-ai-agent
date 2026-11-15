@@ -33,6 +33,7 @@ son los estados persistidos, no una comprobación en vivo de Discord.
 - ¿Cuántos applies hemos aceptado?
 - ¿Cuántas solicitudes hemos rechazado este mes?
 - Muestra los últimos 3 applies aceptados.
+- ¿Quién ha sido el último en ser reclutado? (una aceptación completada registrada).
 - ¿Cuántos personajes tenemos vinculados en WoW Sync?
 - Muéstrame el historial de cambios de roles de WoW Sync hoy.
 - ¿Quién lleva los calderos el miércoles?
@@ -89,3 +90,8 @@ no como si fuera el inicio de la captura ni el primer registro de un personaje.
 Una única aclaración conserva el límite: no se incluyen solicitudes abiertas ni
 decisiones antiguas no guardadas. La respuesta se construye desde los números del
 panel sin llamar al modelo; se mantiene el mismo contrato de herramientas.
+
+«Reclutado/reclutada» identifica Recruitment y filtra aceptaciones completadas.
+«Último/última» sin cantidad solicita una fila; los límites numéricos prevalecen.
+Se devuelve personaje y reino guardados, no identidad Discord ni roster en vivo.
+La fecha corresponde a la decisión registrada, no acredita su hora de finalización.

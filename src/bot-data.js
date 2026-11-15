@@ -34,7 +34,7 @@ export function planBotDataQuery(question,selectedProject,{now=Date.now()}={}){
  if(!/\b(?:cuant[oa]s?|numero|total|recuento|estadisticas|ultim[oa]s?|historial|historico|lista|listado|muestra(?:me)?|dime|ver|quien(?:es)?|cual(?:es)?)\b|\bque (?:cambios|personajes|vinculaciones|decisiones|solicitudes|calderos|listas|ascensos|rol)\b/.test(text))return null;
  if(/\b(?:configuracion|configurado|horarios?|permisos?|logs?|tokens?|puertos?|diagnostica)\b/.test(text))return null;
  if(/\b(?:eventos?|loot|abalorios?|recetas?|wowaudit)\b/.test(text))return null;
- const recruitment=/\b(?:recruitment|reclutamiento|apply|applies|solicitudes?)\b/.test(text);
+ const recruitment=/\b(?:recruitment|reclutamiento|reclutad[oa]s?|apply|applies|solicitudes?)\b/.test(text);
  const wow=/\b(?:wow[- _]*(?:role[- _]*)?sync|role[- _]*sync|vinculaciones?|vinculad[oa]s?|calderos?|bis|ascensos?)\b|sincroniz/.test(text);
  let project=recruitment?'recruitment':wow?'wow':['wow','recruitment'].includes(selectedProject)?selectedProject:null;
  if(recruitment&&wow)return {answer:'Indica si quieres consultar decisiones de Recruitment o registros de WoW Role Sync.'};
@@ -46,7 +46,7 @@ export function planBotDataQuery(question,selectedProject,{now=Date.now()}={}){
   if(/\b(?:clase|oficial|oficiales|usuario|raza)\b|\bpor (?!favor\b)|\bha (?:aceptado|rechazado)\b/.test(text))return {answer:'Puedo consultar totales y decisiones por periodo o personaje entre comillas. Todavía no admito agrupaciones o filtros por oficial, usuario o clase.'};
   if(/\babiert[oa]s?\b/.test(text)||(/pendientes?/.test(text)&&!/decision|aceptacion|rechaz/.test(text)))return {answer:'El registro distingue decisiones iniciadas y completadas, pero no permite contar todas las solicitudes abiertas. Puedo consultar aceptadas, rechazadas o decisiones pendientes de completar.'};
   tool=list?'recruitment_recent':'recruitment_summary';
-  if(list){if(/acept/.test(text)&&!/rechaz/.test(text))result.decision='aceptada';if(/rechaz/.test(text)&&!/acept/.test(text))result.decision='rechazada';result.status=/pendient|sin completar/.test(text)?'pending':'completed';}
+  if(list){if(/acept|\breclutad[oa]s?\b/.test(text)&&!/rechaz/.test(text))result.decision='aceptada';if(/rechaz/.test(text)&&!/acept/.test(text))result.decision='rechazada';result.status=/pendient|sin completar/.test(text)?'pending':'completed';}
  }else{
   if(/calder/.test(text))tool='wow_cauldrons';
   else if(/\bbis\b/.test(text))tool='wow_bis_summary';
@@ -69,7 +69,8 @@ export function planBotDataQuery(question,selectedProject,{now=Date.now()}={}){
   Object.assign(result,dates);
  }
  if(!['recruitment_summary','wow_bis_summary'].includes(tool)){
-  const limit=text.match(/(?:ultim[oa]s?|primer[oa]s?)\s+(\d+)\s+(?:applies|solicitudes|decisiones|cambios|registros|vinculaciones|personajes|ascensos)/);
+  const limit=text.match(/(?:ultim[oa]s?|primer[oa]s?)\s+(\d+)\s+(?:applies|solicitudes|reclutad[oa]s|decisiones|cambios|registros|vinculaciones|personajes|ascensos)/);
+  if(!limit&&/\bultim[oa]\b/.test(text))result.limit=1;
   if(limit){if(+limit[1]<1||+limit[1]>10)return {answer:'Puedo mostrar de 1 a 10 registros por consulta. Concreta el límite o usa un recuento.'};result.limit=+limit[1];}
   if(quoted&&tool!=='wow_cauldrons')result.character=quoted[1];
  }

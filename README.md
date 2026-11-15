@@ -72,6 +72,13 @@ información, la respuesta incluye un aviso de vista parcial. Las fechas se
 conservan como las devuelve WoWAudit, sin inferir una zona horaria. La explicación
 del modelo sigue necesitando validación con consultas reales.
 
+Para «quién ha looteado más», el agente cuenta directamente el historial completo
+de los últimos 30 días sin usar el modelo. Incluye todas las categorías y no declara
+un ganador si faltan registros. Véanse [alcance y diagnóstico](docs/loot-ranking.md).
+
+Los fallos al seleccionar una herramienta con el modelo y los fallos al consultar
+WoWAudit reciben mensajes distintos, sin mostrar detalles privados.
+
 ## Known limitations
 
 - Use the OAuth-enabled MCP client revision and complete the browser login described in deploy/README.md. OAuth login and tool discovery against `https://wowaudit.com/mcp` were verified on Oracle on 2026-11-13; do not reuse ChatGPT tokens.
