@@ -80,16 +80,57 @@ const states={completed:'completada',pending:'pendiente',accepted:'aceptada',rej
 const days={monday:'lunes',tuesday:'martes',wednesday:'miércoles',thursday:'jueves',friday:'viernes',saturday:'sábado',sunday:'domingo'};
 const safe=v=>String(v??'').replace(/[\x00-\x1f]/g,' ').slice(0,100);
 const stamp=v=>v?`${safe(v)} UTC`:'sin registros';
+function humanDay(value, timestamp=false){
+ if(typeof value!=='string')return null;
+ const raw=timestamp?value.replace(' ','T'):value+'T12:00:00Z';
+ const iso=timestamp&&!/(?:Z|[+-]\d{2}:\d{2})$/.test(raw)?raw+'Z':raw;
+ const date=new Date(iso);
+ if(!Number.isFinite(+date))return null;
+ return new Intl.DateTimeFormat('es-ES',{timeZone:'Europe/Madrid',day:'numeric',month:'long',year:'numeric'}).format(date);
+}
+function recruitmentSummary(data){
+ const n=data.total,accepted=data.acceptedCompleted,rejected=data.rejectedCompleted;
+ const pendingAccept=data.acceptedPending,pendingReject=data.rejectedPending;
+ const known=accepted+rejected+pendingAccept+pendingReject;
+ if(known>n)throw Error('Inconsistent recruitment counts');
+ let context='';
+ if(data.filters?.character)context+=` que coinciden con «${safe(data.filters.character)}»`;
+ if(data.period){
+  const from=humanDay(data.period.from),to=humanDay(data.period.to);
+  context+=from&&to?(data.period.from===data.period.to?` el ${from}`:` entre el ${from} y el ${to}`):from?` desde el ${from}`:to?` hasta el ${to}`:'';
+ }
+ let answer;
+ if(n===0)answer=`No hay decisiones registradas${context}.`;
+ else {
+  const intro=`Hay ${n} ${n===1?'solicitud':'solicitudes'} con una decisión registrada${context}`;
+  let detail;
+  if(accepted===n)detail=n===1?'fue aceptada':`las ${n} fueron aceptadas`;
+  else if(rejected===n)detail=n===1?'fue rechazada':`las ${n} fueron rechazadas`;
+  else {
+   const parts=[];
+   if(accepted)parts.push(`${accepted} ${accepted===1?'aceptada':'aceptadas'}`);
+   if(rejected)parts.push(`${rejected} ${rejected===1?'rechazada':'rechazadas'}`);
+   if(pendingAccept)parts.push(`${pendingAccept} con aceptación pendiente de completar`);
+   if(pendingReject)parts.push(`${pendingReject} con rechazo pendiente de completar`);
+   if(n>known)parts.push(`${n-known} con otro estado registrado`);
+   detail=parts.length>1?parts.slice(0,-1).join(', ')+' y '+parts.at(-1):parts[0];
+  }
+  answer=`${intro}: ${detail}.`;
+ }
+ const first=!data.period&&!data.filters?.character?humanDay(data.firstRecordedAt,true):null;
+ const coverage=first?`La decisión más antigua disponible es del ${first}. `:'';
+ return {tool:'recruitment_summary',answer:answer+'\n\n'+coverage+'Este recuento no incluye solicitudes abiertas ni decisiones antiguas que no se hayan guardado.'};
+}
 export function formatBotData(tool,data){
  if(data.available!==true)return {tool,answer:'No se pudo consultar el registro solicitado. Comprueba la conexión del panel, la versión del bot y la ruta/permisos de SQLite. No dispongo de un recuento fiable.'};
  const fields=tool==='recruitment_summary'?['total','acceptedCompleted','rejectedCompleted','acceptedPending','rejectedPending']:tool==='wow_bis_summary'?['total','currentLists']:['total'];
  if(fields.some(k=>!Number.isSafeInteger(data[k])||data[k]<0))throw Error('Invalid database response');
  if(!['recruitment_summary','wow_bis_summary'].includes(tool)&&!Array.isArray(data.rows))throw Error('Invalid database rows');
+ if(tool==='recruitment_summary')return recruitmentSummary(data);
  let lines=[titles[tool]];
  if(data.filters?.character)lines.push(`Personaje contiene: ${safe(data.filters.character)}.`);
  if(data.period)lines.push(`Periodo: ${data.period.from||'inicio del registro'} a ${data.period.to||'última fecha disponible'}, días inclusivos de Europe/Madrid.`);
- if(tool==='recruitment_summary')lines.push(`Aceptadas completadas: ${data.acceptedCompleted}. Rechazadas completadas: ${data.rejectedCompleted}.`,`Decisiones pendientes de completar: ${data.acceptedPending} de aceptación y ${data.rejectedPending} de rechazo.`,`Total de decisiones ${data.period?'en el periodo':'en el registro disponible'}: ${data.total}.`);
- else if(tool==='wow_bis_summary')lines.push(`Listas activas: ${data.currentLists}. Propuestas guardadas: ${data.total}.`,...(data.statuses||[]).map(s=>`• ${safe(states[s.status]||s.status)}: ${s.count}`));
+ if(tool==='wow_bis_summary')lines.push(`Listas activas: ${data.currentLists}. Propuestas guardadas: ${data.total}.`,...(data.statuses||[]).map(s=>`• ${safe(states[s.status]||s.status)}: ${s.count}`));
  else {
   lines.push(`Registros coincidentes: ${data.total}.`);
   for(const r of data.rows||[]){

@@ -58,7 +58,7 @@ test('the reported count bypasses documentation, model and MCP; no panel never i
  const result=await askWhitebird('cuantos applies hemos aceptado?',client,{chatFn,actor:'discord:authorized',panelClient:{call:async(tool,args,actor)=>{
   assert.equal(tool,'recruitment_summary');assert.deepEqual(args,{project:'recruitment'});assert.equal(actor,'discord:authorized');return summary;
  }}});
- assert.match(result.answer,/Aceptadas completadas: 4/);assert.doesNotMatch(result.answer,/apply-aceptar/);
+ assert.match(result.answer,/4 aceptadas/);assert.doesNotMatch(result.answer,/apply-aceptar/);
  assert.match((await askWhitebird('cuantos applies hemos aceptado?',client,{chatFn})).answer,/conecta las herramientas/);
  const unavailable=await askWhitebird('cuantos applies hemos aceptado?',client,{panelClient:{call:async()=>({available:false})}});assert.match(unavailable.answer,/recuento fiable/);
 });
@@ -80,5 +80,25 @@ test('Discord → HTTP agent → authenticated panel client uses the count tools
  const config=discordConfig({DISCORD_BOT_TOKEN:'fake',DISCORD_APPLICATION_ID:'100000000000000001',DISCORD_GUILD_ID:'100000000000000002',DISCORD_CHANNEL_IDS:'100000000000000003',DISCORD_ROLE_IDS:'100000000000000004',AGENT_API_TOKEN:agentToken,DISCORD_AGENT_URL:`http://127.0.0.1:${server.address().port}`});
  const messages=[];const handle=createDiscordHandler(config);
  await handle({isChatInputCommand:()=>true,commandName:'whitebird-ask',guildId:config.guildId,channelId:config.channels[0],member:{roles:config.roles},user:{id:'authorized'},options:{getString:()=> 'cuantos applies hemos aceptado?'},deferReply:async m=>messages.push(m),editReply:async m=>messages.push(m),reply:async m=>messages.push(m)});
- assert.equal(calls,1);assert.equal(messages[0].flags,64);assert.match(messages[1].content,/Aceptadas completadas: 4/);assert.deepEqual(messages[1].allowedMentions,{parse:[]});
+ assert.equal(calls,1);assert.equal(messages[0].flags,64);assert.match(messages[1].content,/4 aceptadas/);assert.deepEqual(messages[1].allowedMentions,{parse:[]});
+});
+
+test('Recruitment summary sounds natural without treating recorded decisions as all received applications',()=>{
+ const result=formatBotData('recruitment_summary',{...summary,total:2,acceptedCompleted:2,rejectedCompleted:0,acceptedPending:0,rejectedPending:0,firstRecordedAt:'2026-11-11 22:52:51'});
+ assert.match(result.answer,/Hay 2 solicitudes con una decisión registrada: las 2 fueron aceptadas/);
+ assert.match(result.answer,/11 de noviembre de 2026/);
+ assert.match(result.answer,/no incluye solicitudes abiertas/);
+ assert.doesNotMatch(result.answer,/Rechazadas completadas|UTC|No acredita|Total de decisiones|hemos recibido/);
+ assert.ok(result.answer.length<450);
+});
+test('natural summaries preserve pending states, singular, zero and calendar filters',()=>{
+ assert.match(formatBotData('recruitment_summary',summary).answer,/4 aceptadas, 2 rechazadas, 2 con aceptación pendiente de completar y 1 con rechazo pendiente de completar/);
+ const single={...summary,total:1,acceptedCompleted:1,rejectedCompleted:0,acceptedPending:0,rejectedPending:0};
+ assert.match(formatBotData('recruitment_summary',single).answer,/Hay 1 solicitud.*fue aceptada/);
+ const zero={...single,total:0,acceptedCompleted:0,firstRecordedAt:null,period:{from:'2026-11-01',to:'2026-11-15'}};
+ assert.match(formatBotData('recruitment_summary',zero).answer,/No hay decisiones registradas entre el 1 de noviembre de 2026 y el 15 de noviembre de 2026/);
+ const filtered={...single,period:{from:'2026-11-15',to:'2026-11-15'},filters:{character:'Alpha'}};
+ const text=formatBotData('recruitment_summary',filtered).answer;
+ assert.match(text,/coinciden con «Alpha» el 15 de noviembre de 2026/);assert.doesNotMatch(text,/más antigua/);
+ assert.throws(()=>formatBotData('recruitment_summary',{...single,acceptedCompleted:2}),/Inconsistent/);
 });
