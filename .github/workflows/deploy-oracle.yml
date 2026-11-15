@@ -19,6 +19,8 @@ concurrency:
 
 jobs:
   deploy:
+    permissions:
+      contents: write
     runs-on: ubuntu-24.04
     environment: oracle
     timeout-minutes: 20
@@ -99,9 +101,9 @@ jobs:
           ssh "${opts[@]}" -p "$SSH_PORT" "$target" "mkdir -p \"\$HOME/whitebird/incoming/$release\""
           scp "${opts[@]}" -P "$SSH_PORT" agent-release.tar.gz "$target:whitebird/incoming/$release/agent-release.tar.gz"
           ssh "${opts[@]}" -p "$SSH_PORT" "$target" "bash -s -- '$release'" < whitebird-ai-agent/deploy/install-release.sh
-      - name: Record verified deployment in Whitebird-context
-        if: vars.CONTEXT_REPORT_ENABLED == 'true'
+
+      - name: Publish verified documentation in this repository
         working-directory: whitebird-ai-agent
         env:
-          WHITEBIRD_CONTEXT_WRITE_TOKEN: ${{ secrets.WHITEBIRD_CONTEXT_WRITE_TOKEN }}
-        run: node scripts/record-context-deployment.mjs
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/publish-knowledge.mjs

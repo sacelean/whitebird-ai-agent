@@ -1,89 +1,83 @@
-# Contexto publicado por su propia pipeline
+# Recogida central de documentación
 
-Whitebird-context tiene una pipeline independiente: valida los cambios y publica
-el catálogo del chatbot por SSH. El agente solo lee un archivo local al arrancar
-y cada diez segundos. No necesita GitHub, git pull ni token de lectura.
-Panel y Discord comparten el mismo agente y reciben la misma ayuda.
+Cada componente mantiene docs/knowledge.json en su propio repositorio. Su pipeline
+publica una copia verificada en la rama knowledge-published del MISMO repositorio,
+en published/knowledge.json. Usa el GITHUB_TOKEN automático; no escribe en contexto.
 
-## Flujo
+Whitebird-context recoge las cinco publicaciones mediante peticiones GET con su
+propia credencial de lectura, cada cinco minutos o al ejecutar Run workflow sobre
+main. GitHub puede retrasar el horario programado. La descarga se fija al commit
+observado de la rama para evitar mezclar revisiones. Se validan repositorio,
+identificador, revisión, procedencia, tamaño y formato. No se ejecuta código remoto.
 
-1. Modificar el bot y su documentación técnica.
-2. Publicar en Whitebird-context/knowledge/bots.json su explicación y
-   implementedRevision con el SHA completo de 40 caracteres del bot. Actualizar
-   STATUS.md, fecha y fuentes. Mantener el orden de topics del enrutador.
-3. La pipeline del bot despliega y comprueba su conexión. Solo después registra
-   deployments/<componente>.json en Whitebird-context con revisión, fecha y enlace
-   al run. Ese commit vuelve a disparar la pipeline del contexto.
-4. La pipeline del contexto activa la explicación solo si implementedRevision
-   coincide exactamente con la revisión del registro de despliegue. Si hay
-   documentación pendiente conserva la explicación previa si corresponde al bot
-   desplegado; si no hay explicación compatible muestra ayuda no verificada.
-5. Publica una release nueva y cambia el enlace current de forma atómica.
-   El agente la recoge en hasta diez segundos sin reiniciarse.
+El catálogo agregado y sus registros se generan en build/, no se editan ni se
+commitean. El contexto publica una release por SSH y cambia current atómicamente.
+El agente lee el archivo local cada diez segundos, sin acceder a GitHub.
 
-Un cambio de código no escribe automáticamente su explicación. Hay que actualizar
-el catálogo como parte del cambio. Los registros acreditan las comprobaciones de
-la pipeline, no una auditoría continua de producción. Un rollback debe registrar
-la revisión restaurada; las explicaciones antiguas se recuperan del historial Git
-si ya no están en el catálogo actual. No modificar deployedRevision para saltarse
-la comprobación: el publicador lo calcula a partir del registro de despliegue.
+## Configuración que se conserva
 
-## Configurar el agente una vez
-
-En su entorno privado:
+En el agente:
 
 ```dotenv
 WHITEBIRD_CONTEXT_PATH=/home/ubuntu/whitebird/context/current/bots.json
 WHITEBIRD_CONTEXT_CACHE=/home/ubuntu/whitebird/shared/context-knowledge.json
 ```
 
-La primera ruta debe coincidir con OCI_CONTEXT_PATH/current/bots.json en la
-pipeline del contexto. La segunda es opcional y debe ser escribible por el
-usuario del agente. Puede eliminarse WHITEBIRD_CONTEXT_TOKEN; ya no se usa.
-Reiniciar el agente una vez tras configurar estas rutas y desplegar este código.
-Después, los cambios de catálogo no requieren reinicios.
+La caché es opcional. No se necesita un token GitHub en el agente. No reiniciar
+por cambios de documentación; solo si se modifican las variables del servicio.
 
-## Configurar Whitebird-context
+En Whitebird-context, variables de repositorio (no secrets):
 
-En GitHub, secrets del environment oracle: OCI_HOST, OCI_USER, OCI_SSH_KEY,
-OCI_KNOWN_HOSTS. La clave del host debe verificarse; no se acepta automáticamente.
-Variables del repositorio: OCI_CONTEXT_PATH (ruta absoluta, sin espacios),
-OCI_SSH_PORT (opcional, 22) y CONTEXT_DEPLOY_ENABLED=true para activar publicación.
+| Variable | Valor |
+| --- | --- |
+| CONTEXT_DEPLOY_ENABLED | true |
+| OCI_CONTEXT_PATH | Ruta absoluta de la carpeta de contexto preparada en la VM |
+| OCI_SSH_PORT | Puerto SSH, opcional, por defecto 22 |
 
-En el servidor Linux con Node 22, tar y flock, preparar una carpeta dedicada,
-propiedad del usuario SSH, por ejemplo /home/ubuntu/whitebird/context. Crear allí
-el archivo vacío .allow-context-deploy. El usuario del agente necesita lectura y
-acceso a esa carpeta. No hace falta clonar repositorios ni guardar tokens allí.
-La publicación conserva releases previas y usa bloqueo; rechaza runs anteriores
-que terminen después de uno más reciente. No reinicia ni despliega bots.
+En el environment oracle, conservar los secrets OCI_HOST, OCI_USER, OCI_SSH_KEY y
+OCI_KNOWN_HOSTS. La carpeta debe contener .allow-context-deploy y ser escribible
+por el usuario SSH. Node 22, tar y flock deben estar disponibles en SSH.
 
-## Configurar las notificaciones de bots
+## Único secret nuevo, solo en Whitebird-context
 
-Sync y Recruitment añaden un paso después de la comprobación de conexión a Discord.
-Activarlo con la variable CONTEXT_REPORT_ENABLED=true y el secret
-WHITEBIRD_CONTEXT_WRITE_TOKEN: token fino de GitHub con Contents: read/write solo
-sobre Whitebird-context. El token permanece en CI, nunca en el agente.
-El GITHUB_TOKEN de un bot no permite escribir en otro repositorio privado.
-El commit se hace con ese token para que dispare la pipeline del contexto.
-Un error de notificación se distingue en su paso: no deshace el bot ya desplegado.
+Añadir CONTEXT_SOURCES_READ_TOKEN en el environment oracle: token fino de GitHub,
+Contents: read-only, con acceso a estos cinco repositorios:
 
-Ruleta no tenía pipeline de despliegue. Se incluye un workflow manual para
-registrar una revisión después de comprobar personalmente el despliegue; exige
-SHA completo y confirmación. Ese workflow no instala ni comprueba el bot.
-El agente también incorpora el paso de notificación al final de su despliegue.
-El panel conserva su despliegue existente; hasta registrar su versión y documentar
-el SHA correspondiente su ayuda publicada aparece como pendiente de verificación.
+- sacelean/whitebird-wow-role-sync
+- sacelean/whitebird-recruitment-bot
+- sacelean/whitebird-wow-wheel
+- sacelean/whitebird-ai-agent
+- sacelean/Whitebird-control-pane
 
-## Fallos y comprobaciones
+No necesita permisos de escritura ni Actions. El GITHUB_TOKEN del contexto no
+puede leer otros repositorios privados. Esa credencial no va a bots ni al agente.
+Los bots ya no usan los antiguos tokens de escritura al contexto ni la variable
+que activaba las notificaciones; pueden eliminarse después de incorporar el cambio.
 
-El publicador valida el catálogo entero antes de cambiar current. Si falla,
-conserva la release anterior. El agente rechaza archivos inválidos o mayores de
-256 KiB y conserva el último válido en memoria y, opcionalmente, en caché.
-Si falta el archivo publicado usa su ayuda incluida con aviso de respaldo;
-ese respaldo no acredita el comportamiento desplegado.
+## Mantenimiento y migración
 
-Validar cambios: `npm run context:validate -- /ruta/knowledge/bots.json` desde el
-agente, o `node scripts/catalog.mjs validate knowledge/bots.json` en contexto.
-La pipeline del contexto ejecuta también pruebas de publicación y versiones.
-No se han configurado secretos, activado pipelines ni desplegado servicios en
-esta implementación. Los cambios remotos se preparan en ramas para revisión.
+1. Actualizar docs/knowledge.json y documentación técnica en el proyecto afectado.
+   Cambiar reviewedAt y fuentes; mantener el orden de topics del enrutador.
+2. Validar con node scripts/publish-knowledge.mjs --validate. Las pruebas del
+   publicador se ejecutan con node --test scripts/check-knowledge.mjs.
+3. Tras verificar el despliegue, la pipeline publica documento y SHA automáticamente
+   en su propio repositorio. No copiar SHA ni resúmenes al contexto.
+4. Ejecutar la pipeline de contexto o esperar a la recogida programada. Comprobar
+   el paso de recogida y publicación, después preguntar al chatbot.
+
+Incorporar primero los cambios de los proyectos de origen. Para disponer de la
+primera publicación, ejecutar su despliegue habitual. Ruleta mantiene despliegue
+manual: su workflow exige confirmar que la revisión está en ejecución y que la
+documentación corresponde a ella; no verifica esa declaración automáticamente.
+Después configurar el secret de lectura e incorporar el contexto recolector.
+Sin publicaciones o sin credencial, el recolector falla con mensaje y conserva
+el catálogo ya desplegado. Si solo falla una fuente, conserva su última ayuda y
+marca collectionUnavailable. El agente actualizado muestra ese aviso. Antes de la
+primera publicación de un componente, su ayuda puede figurar como no disponible.
+
+La verificación acredita el último despliegue publicado, no el estado en vivo.
+Tras un rollback, volver a publicar la documentación que corresponda a la revisión
+restaurada. No conservar documentación de la versión nueva como si fuera actual.
+Los datos reales, logs y configuración se comprueban con las herramientas del panel.
+
+Esta migración se prepara en PR; no configura secretos ni despliega servicios.

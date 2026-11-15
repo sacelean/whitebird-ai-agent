@@ -37,7 +37,7 @@ export function projectHelp(question, selectedProject, context = contextKnowledg
   const body = topic?.text || project.overview;
   const entry = context.catalog?.projects.find(e => e.id === project.id);
   const notice = entry
-    ? `Contexto revisado ${context.catalog.reviewedAt}.${context.stale ? ' Sincronización no disponible; usando copia local.' : ''} ${entry.deployedRevision === null ? 'Despliegue sin verificar.' : `Versión desplegada documentada: ${entry.deployedRevision}.${entry.deployedRevision !== entry.implementedRevision ? ' La versión implementada difiere; esta ayuda puede incluir cambios pendientes.' : ''}`} Comprueba el estado real en el panel.`
+    ? `Contexto revisado ${context.catalog.reviewedAt}.${context.stale ? ' Sincronización no disponible; usando copia local.' : ''}${entry.collectionUnavailable ? ' Fuente no disponible; se conserva la última ayuda publicada.' : ''} ${entry.deployedRevision === null ? 'Despliegue sin verificar.' : `Versión desplegada documentada: ${entry.deployedRevision}.${entry.deployedRevision !== entry.implementedRevision ? ' La versión implementada difiere; esta ayuda puede incluir cambios pendientes.' : ''}`} Comprueba el estado real en el panel.`
     : 'Ayuda local de respaldo; contexto compartido no disponible. Despliegue sin verificar. Comprueba el estado real en el panel.';
   return { tool: null, answer: `${project.name}\n\n${body}\n\n${notice}` };
 }

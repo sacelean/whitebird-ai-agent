@@ -134,3 +134,7 @@ existentes. Esos usuarios pasan a poder utilizar la administración al conectar
 las herramientas. Las operaciones y credenciales permanecen en el backend del
 panel. La respuesta HTTP conserva tool y answer, con proposal opcional para
 el flujo de revisión. POST /actions del agente procesa confirmaciones autenticadas.
+
+## Documentación del chatbot
+
+Mantener [docs/knowledge.json](docs/knowledge.json) junto con cada cambio de comportamiento. La pipeline publica la versión verificada en este mismo repositorio y Whitebird-context la recoge con acceso de lectura. Ver [flujo y comprobaciones](docs/context-publication.md).

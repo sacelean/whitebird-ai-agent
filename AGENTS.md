@@ -16,14 +16,17 @@ El repositorio de contexto es privado. Si no hay acceso, indicarlo y continuar c
 - No desplegar ni modificar otros proyectos solo por estar mencionados en la documentación.
 - No guardar secretos, archivos .env, tokens, bases de datos ni datos personales en el contexto.
 
-## Conocimiento compartido del chatbot
 
-Al cambiar comportamiento, comandos, configuración o integraciones, actualizar
-Whitebird-context/STATUS.md y knowledge/bots.json. Consultar knowledge/README.md
-en ese repositorio. Registrar fuentes, fecha y revisión implementada; acreditar
-la revisión desplegada por separado mediante deployments/<componente>.json tras verificarla.
-El agente lee el catálogo local publicado por la pipeline de Whitebird-context;
-no requiere token GitHub ni git pull.
-Validar el catálogo con npm run context:validate -- /ruta/bots.json.
-La ayuda incluida en src/project-knowledge.js es un respaldo; mantenerla compatible
-con el esquema y actualizar el enrutador al añadir proyectos o temas.
+## Documentación publicada para el chatbot
+
+Al cambiar funcionalidades, comandos, permisos, configuración o integraciones,
+actualizar docs/knowledge.json en este mismo repositorio y la documentación técnica.
+Registrar reviewedAt y source; mantener topics en el orden del enrutador del agente.
+Validar con node scripts/publish-knowledge.mjs --validate.
+La pipeline publica una copia en la rama knowledge-published solo después de verificar
+el despliegue. El SHA se añade automáticamente. Whitebird-context recoge esa copia
+con acceso de solo lectura y genera el catálogo. No editar el catálogo agregado ni
+registrar despliegues directamente en otro repositorio. No guardar secretos o datos
+personales en la documentación. Los cambios de arquitectura/operación siguen
+registrándose en Whitebird-context/STATUS.md con fecha y evidencia.
+Ver docs/context-publication.md para activación y comprobaciones.
