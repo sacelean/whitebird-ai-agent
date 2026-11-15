@@ -1,5 +1,5 @@
 [Unit]
-Description=Whitebird read-only AI agent
+Description=Whitebird AI agent
 After=network-online.target
 Wants=network-online.target
 

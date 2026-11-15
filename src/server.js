@@ -1,3 +1,5 @@
+import { createPanelClient } from './panel-client.js';
+import { proposalAnswer } from './management.js';
 import http from 'node:http';
 import { timingSafeEqual } from 'node:crypto';
 import { resolve } from 'node:path';
@@ -5,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { PROJECT_IDS } from './project-help.js';
 import { askWhitebird } from './agent.js';
 
-export function createAgentServer({ client, token, port = 3090, ask = askWhitebird } = {}) {
+export function createAgentServer({ client, token, port = 3090, ask = askWhitebird, panelClient = createPanelClient() } = {}) {
   if (typeof token !== 'string' || token.length < 32) throw new Error('AGENT_API_TOKEN must contain at least 32 characters');
   if (!client) throw new Error('MCP client required');
   let busy = false;
@@ -14,13 +16,13 @@ export function createAgentServer({ client, token, port = 3090, ask = askWhitebi
     res.end(JSON.stringify(data));
   };
   const server = http.createServer(async (req, res) => {
-    // No browser access: the panel backend is the only consumer.
+    // Backend-only API consumed by the panel and Discord adapter.
     if (req.headers.host !== `127.0.0.1:${server.address().port}` || req.headers.origin) return send(res, 403, { error: 'Forbidden' });
     const supplied = Buffer.from(req.headers.authorization || '');
     const expected = Buffer.from(`Bearer ${token}`);
     if (supplied.length !== expected.length || !timingSafeEqual(supplied, expected)) return send(res, 401, { error: 'Unauthorized' });
     if (req.method === 'GET' && req.url === '/health') return send(res, 200, { status: 'ok', busy });
-    if (req.method !== 'POST' || req.url !== '/ask') return send(res, 404, { error: 'Not found' });
+    if (req.method !== 'POST' || !['/ask', '/actions'].includes(req.url)) return send(res, 404, { error: 'Not found' });
     if (req.headers['content-type']?.split(';')[0].trim() !== 'application/json') return send(res, 415, { error: 'JSON required' });
     let input;
     try {
@@ -32,13 +34,21 @@ export function createAgentServer({ client, token, port = 3090, ask = askWhitebi
       }
       input = JSON.parse(Buffer.concat(chunks).toString('utf8'));
     } catch { return send(res, 400, { error: 'Invalid JSON' }); }
+    if (input?.actor !== undefined && (typeof input.actor !== 'string' || input.actor.length > 160 || /[\r\n\0]/.test(input.actor))) return send(res, 400, { error: 'Invalid actor' });
+    if (req.url === '/actions') {
+      if (!panelClient) return send(res, 503, { error: 'Herramientas del panel sin configurar.' });
+      try {
+        const result = await panelClient.action(input?.action, input?.id, input?.actor || 'api');
+        return send(res, 200, { tool: 'panel_management', answer: proposalAnswer(result.proposal), ...result });
+      } catch { return send(res, 409, { error: 'No se pudo completar la acción. Consulta el estado de la propuesta y revisa si ha caducado o cambiado la configuración.' }); }
+    }
     if (!input || typeof input.question !== 'string' || !input.question.trim() || input.question.trim().length > 1000) return send(res, 400, { error: 'Question must contain 1-1000 characters' });
     if (input.project !== undefined && !PROJECT_IDS.includes(input.project)) return send(res, 400, { error: 'Unknown project' });
     // Reject excess work rather than accumulate unbounded, potentially stale queries.
     if (busy) return send(res, 429, { error: 'El agente está ocupado. Espera a que termine la consulta actual.' });
     busy = true;
     try {
-      const result = await ask(input.question.trim(), client, { project: input.project });
+      const result = await ask(input.question.trim(), client, { project: input.project, actor: input.actor || 'api', panelClient });
       send(res, 200, result);
     } catch {
       // Never send upstream errors, OAuth details or model data to the caller.

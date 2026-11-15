@@ -111,3 +111,32 @@ funciona?» o «¿Qué permisos necesita?» tras seleccionar un bot, o indicar o
 por su nombre en la pregunta. La ayuda usa el catálogo descrito en el README
 del agente. Las preguntas de errores y diagnóstico conservan el recorrido local
 del panel. Requiere incorporar el enrutado correspondiente en Whitebird-control-pane.
+
+
+## Herramientas administrativas del panel
+
+Configura PANEL_TOOLS_URL y PANEL_TOOLS_TOKEN en el servicio del agente y
+PANEL_AGENT_TOOLS_TOKEN en el panel. Los dos tokens de herramientas deben
+coincidir. El token de /ask sigue siendo independiente. Reinicia ambos servicios
+para cargar sus respectivas variables. Los valores de configuración proceden
+del archivo registrado en el panel, con los predeterminados identificados.
+
+El panel ofrece /api/agent-tools para herramientas autenticadas. El agente
+investiga con consultas sucesivas y devuelve propuestas validadas para revisar.
+Los controles de guardar y aplicar están disponibles en el chat del panel y en
+Discord. Los formularios y las acciones del chat comparten operaciones, revisión
+y exclusión mutua. La API de respuestas añade proposal opcional a {tool, answer}.
+
+Las consultas del panel incluyen un actor ligado al CSRF de esa instancia del panel. Discord
+incluye servidor y usuario. Las propuestas solo admiten acciones del mismo actor.
+El agente ofrece POST /actions con la autenticación y restricciones de origen
+existentes. Los secretos se gestionan en el formulario. Las propuestas caducan
+a los 15 minutos y se pierden al reiniciar el panel.
+
+Aplicar devuelve un trabajo en curso. El panel consulta Estado automáticamente;
+en Discord se puede usar el botón Estado o repetir la acción para obtener su
+resultado. Los reinicios Docker necesitan PANEL_RESTART_ENABLED y los de IA
+PANEL_SYSTEMD_RESTART_ENABLED, más los permisos del usuario del panel para
+las unidades fijas. Un fallo parcial se muestra con el archivo aún guardado.
+Prueba en la instalación destino configuración, permisos y reinicio de cada
+componente antes de acreditar disponibilidad de producción.

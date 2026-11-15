@@ -1,3 +1,4 @@
+import { askManagement, isManagementQuestion } from './management.js';
 import { projectHelp } from './project-help.js';
 import { formatToolResult, isReadableAnswer } from './result-format.js';
 
@@ -11,17 +12,17 @@ export function validateLocalUrl(urlString = LOCAL_URL) {
   return url;
 }
 
-export async function chat(messages, { fetchFn = fetch, url = LOCAL_URL } = {}) {
+export async function chat(messages, { fetchFn = fetch, url = LOCAL_URL, timeoutMs = 120000, signal, maxTokens = 350 } = {}) {
   validateLocalUrl(url);
   const abort = new AbortController();
-  const timeout = setTimeout(() => abort.abort(), 120000);
+  const timeout = setTimeout(() => abort.abort(), timeoutMs);
   try {
     const res = await fetchFn(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: process.env.LLAMA_MODEL || 'local', messages, temperature: 0, max_tokens: 350, stream: false,
+      body: JSON.stringify({ model: process.env.LLAMA_MODEL || 'local', messages, temperature: 0, max_tokens: maxTokens, stream: false,
         chat_template_kwargs: { enable_thinking: false } }),
-      signal: abort.signal
+      signal: signal ? AbortSignal.any([signal, abort.signal]) : abort.signal
     });
     if (!res.ok) throw new Error(`Local model HTTP error: ${res.status}`);
     const data = await res.json();
@@ -67,15 +68,16 @@ function isHelpQuestion(question) {
   return /^(?:hola )?(?:que puedes hacer|que sabes hacer|que funciones tienes|que herramientas tienes|como puedes ayudarme|en que puedes ayudarme|ayuda|help)(?: por favor)?$/.test(text);
 }
 
-export async function askWhitebird(question, client, { chatFn = chat, project } = {}) {
+export async function askWhitebird(question, client, { chatFn = chat, project, actor = 'api', panelClient } = {}) {
   if (!question || question.length > 1000) throw new Error('Question must contain 1-1000 characters');
+  if (isManagementQuestion(question)) return askManagement(question, { panelClient, chatFn, project, actor });
   const documentation = projectHelp(question, project);
   if (documentation) return documentation;
   const tools = client.listAllowedTools().filter(t=>SHORTLIST.includes(t.name));
   if (isHelpQuestion(question)) {
     const capabilities = tools.map(tool => `• ${CAPABILITIES[tool.name]}`).join('\n');
     return { tool: null, answer: capabilities
-      ? `Puedo consultar datos de WoWAudit en modo solo lectura:\n${capabilities}\n\nTambién puedo explicar WoW Role Sync, Recruitment, Ruleta, Whitebird IA y el control pane. Indica el bot y la función.\n\nPor ejemplo: «¿Qué eventos tenemos próximamente?» o «¿Qué loot hemos recibido?». No modifico datos ni asigno loot.`
+      ? `Puedo consultar datos de WoWAudit en modo solo lectura:\n${capabilities}\n\nTambién puedo explicar WoW Role Sync, Recruitment, Ruleta, Whitebird IA y el control pane. Indica el bot y la función.\n\nPor ejemplo: «¿Qué eventos tenemos próximamente?» o «¿Qué loot hemos recibido?». Con las herramientas del panel configuradas también puedo consultar la configuración real, investigar errores y preparar cambios para guardar y aplicar desde los controles del chat.`
       : 'Puedo explicar WoW Role Sync, Recruitment, Ruleta, Whitebird IA y el control pane. Indica el bot y la función. Ahora no tengo herramientas de consulta WoWAudit disponibles.' };
   }
   const names = tools.map(t=>t.name);

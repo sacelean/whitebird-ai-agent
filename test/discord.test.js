@@ -85,3 +85,25 @@ test('Discord explains each bot through the shared HTTP agent with complete priv
     assert.deepEqual(i.messages[1].allowedMentions, { parse: [] });
   }
 });
+
+test('Discord shows the full proposal before confirmation buttons and binds action requests to the user', async () => {
+  const id = 'a'.repeat(32);
+  const calls = [];
+  const handle = createDiscordHandler(config, { fetchFn: async (url, options) => {
+    const body = JSON.parse(options.body); calls.push({ url, body });
+    return { ok: true, json: async () => ({ answer: body.action ? 'Configuración guardada.' : 'Revisión completa\n' + 'x'.repeat(2200),
+      proposal: { id, state: body.action ? 'saved' : 'prepared', canApply: true } }) };
+  } });
+  const question = interaction({ options: { getString: () => 'cambia el horario a las 5' } });
+  question.followUp = async data => question.messages.push(data);
+  await handle(question);
+  assert.ok(question.messages.length >= 3);
+  assert.deepEqual(question.messages[1].components, []);
+  assert.equal(question.messages.at(-1).components[0].components[0].custom_id, `whitebird:save:${id}`);
+  assert.ok(question.messages.slice(1).every(message => !message.content.includes('recortada')));
+  const button = interaction({ isButton: () => true, isChatInputCommand: () => false, customId: `whitebird:save:${id}` });
+  await handle(button);
+  assert.ok(calls[1].url.endsWith('/actions'));
+  assert.equal(calls[1].body.actor, `discord:${config.guildId}:user`);
+  assert.equal(button.messages[1].components[0].components[0].custom_id, `whitebird:apply:${id}`);
+});

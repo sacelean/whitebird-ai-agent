@@ -81,3 +81,22 @@ agente que en el panel. Las preguntas son independientes. La explicación de
 funcionamiento se responde directamente y conserva los límites de acceso y las
 respuestas privadas del adaptador. La descripción actualizada de /whitebird-ask
 se aplica al registrar de nuevo el comando con el procedimiento anterior.
+
+
+## Consultas y cambios de configuración
+
+Con las herramientas del panel conectadas al agente, los usuarios autorizados
+pueden consultar configuración real, investigar logs y permisos y preparar
+cambios. Por ejemplo «Muestra la configuración actual de WoW Role Sync»,
+«Cambia el horario de sincronización de WoW Role Sync a las 5» o «Investiga
+por qué Recruitment no puede enviar mensajes».
+
+La propuesta muestra los valores anteriores y nuevos completos, en varios
+mensajes privados si hace falta. Los controles aparecen al final. Guardar
+persiste el cambio y Aplicar y reiniciar solicita su aplicación. El botón
+Estado consulta la operación, también tras reiniciar el propio adaptador.
+Los botones vuelven a comprobar los canales y roles autorizados y la propuesta
+está ligada al servidor y usuario que la solicitó. Las propuestas duran 15
+minutos y se pierden si se reinicia el panel. Las credenciales se editan en el
+formulario del panel. Revisa qué roles tienen acceso al agente al habilitar la
+administración, pues pasan a poder realizar estas operaciones.
