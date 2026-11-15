@@ -2,6 +2,8 @@ const normalize = text => text.normalize('NFD').replace(/\p{M}/gu,'').toLowerCas
 const dayShift=(day,n)=>new Date(Date.parse(day+'T12:00:00Z')+n*86400000).toISOString().slice(0,10);
 function today(now){const p=Object.fromEntries(new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Madrid',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date(now)).map(x=>[x.type,x.value]));return `${p.year}-${p.month}-${p.day}`;}
 function period(text,now){
+ if(/\b\d{1,2}[/-]\d{1,2}[/-]\d{2,4}\b/.test(text))return {error:'Indica las fechas como YYYY-MM-DD para evitar confundir día y mes.'};
+ if(/\b(?:enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)\b/.test(text))return {error:'Indica mes y año mediante fechas YYYY-MM-DD, o usa «este mes» o «mes pasado».'};
  const days=[...text.matchAll(/\b\d{4}-\d{2}-\d{2}\b/g)].map(m=>m[0]);
  if(/\bhoy\b/.test(text)&&/\bayer\b/.test(text))return {error:'Indica un solo periodo: hoy, ayer o fechas explícitas.'};
  const d=today(now),weekStart=dayShift(d,-((new Date(d+'T12:00:00Z').getUTCDay()+6)%7));
