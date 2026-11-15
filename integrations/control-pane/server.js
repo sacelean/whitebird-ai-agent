@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import { createDiagnostics } from './diagnostics.js';
 import { createAgentApi } from './agent-api.js';
 import { recruitmentRecords } from './recruitment-records.js';
 import { readAudit } from './audit.js';
@@ -12,22 +13,26 @@ import { resolve, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { randomBytes } from 'node:crypto';
 import { parse } from 'dotenv';
-import { view, update, revision, modules, recruitmentModules, rouletteModules } from './config.js';
+import { view, update, revision, modules, recruitmentModules, rouletteModules, agentModules, agentDiscordModules } from './config.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const botsRoot = resolve(here, '..');
-export function createPanel({ restartEnabled = process.env.PANEL_RESTART_ENABLED === 'true', execute = runCompose, envPath = resolve(process.env.PANEL_ENV_PATH || join(botsRoot, 'whitebird-wow-role-sync/.env')), port = Number(process.env.PANEL_PORT || 3080), recruitmentEnvPath = resolve(process.env.PANEL_RECRUITMENT_ENV_PATH || join(botsRoot, 'whitebird-recruitment-bot/.env')), rouletteEnvPath = resolve(process.env.PANEL_ROULETTE_ENV_PATH || join(botsRoot, 'whitebird-wow-wheel/.env')) } = {}) {
+export function createPanel({ agentEnvPath = resolve(process.env.PANEL_AGENT_ENV_PATH || join(botsRoot, 'whitebird-ai-agent/.env')), agentDiscordEnvPath = resolve(process.env.PANEL_AGENT_DISCORD_ENV_PATH || join(botsRoot, 'whitebird-ai-agent/discord.env')), restartEnabled = process.env.PANEL_RESTART_ENABLED === 'true', execute = runCompose, envPath = resolve(process.env.PANEL_ENV_PATH || join(botsRoot, 'whitebird-wow-role-sync/.env')), port = Number(process.env.PANEL_PORT || 3080), recruitmentEnvPath = resolve(process.env.PANEL_RECRUITMENT_ENV_PATH || join(botsRoot, 'whitebird-recruitment-bot/.env')), rouletteEnvPath = resolve(process.env.PANEL_ROULETTE_ENV_PATH || join(botsRoot, 'whitebird-wow-wheel/.env')) } = {}) {
 const origin = `http://127.0.0.1:${port}`;
 const csrf = randomBytes(32).toString('hex');
-const agentApi = createAgentApi();
 let saving = false;
 const projects = [
   { id: 'wow', name: 'WoW Role Sync', path: envPath, modules, base: dirname(envPath) },
   { id: 'recruitment', name: 'Recruitment', path: recruitmentEnvPath, modules: recruitmentModules, base: dirname(recruitmentEnvPath) },
-  { id: 'roulette', name: 'Ruleta', path: rouletteEnvPath, modules: rouletteModules, base: dirname(rouletteEnvPath) }
+  { id: 'roulette', name: 'Ruleta', path: rouletteEnvPath, modules: rouletteModules, base: dirname(rouletteEnvPath) },
+  { id: 'agent', name: 'Whitebird IA · Servicio', path: agentEnvPath, modules: agentModules, base: dirname(agentEnvPath), manualRestart: true },
+  { id: 'agent-discord', name: 'Whitebird IA · Bot Discord', path: agentDiscordEnvPath, modules: agentDiscordModules, base: dirname(agentDiscordEnvPath), manualRestart: true }
 ];
+const diagnose = createDiagnostics({ projects, execute });
+const agentApi = createAgentApi({ diagnose });
 const readEnv = project => readFile(project.path, 'utf8');
 async function state(env, project) {
+  if (project.manualRestart) return { available: false, message: 'Este componente no utiliza SQLite. El panel no comprueba el proceso, el modelo ni la sesión OAuth en vivo.' };
   const path = resolve(project.base, env.DATABASE_PATH || (project.id === 'recruitment' ? './data/whitebird-recruitment.sqlite' : project.id === 'roulette' ? './data/whitebird.sqlite' : './data/whitebird-wow-roles.sqlite'));
   let db;
   try {
@@ -75,6 +80,7 @@ const server = http.createServer(async (req, res) => {
     if (url.pathname === '/api/restart' && req.method === 'POST') {
       if (req.headers['x-panel-csrf'] !== csrf) return send(res, 403, { error: 'Recarga el panel para reiniciar.' });
       if (!project) return send(res, 404, { error: 'Bot desconocido.' });
+      if (project.manualRestart) return send(res, 403, { error: 'Este componente usa systemd. Reinicia su servicio manualmente después de guardar.' });
       if (!restartEnabled) return send(res, 403, { error: 'Reinicio deshabilitado. Configura PANEL_RESTART_ENABLED=true en el servidor.' });
       if (saving) return send(res, 409, { error: 'Hay otro guardado o reinicio en curso.' });
       saving = true;
@@ -99,7 +105,7 @@ const server = http.createServer(async (req, res) => {
     if (url.pathname === '/api/config' && (!project || !project.path)) return send(res, 404, { error: 'Bot no integrado o desconocido.' });
     if (url.pathname === '/api/config' && req.method === 'GET') {
       const text = await readEnv(project);
-      return send(res, 200, { ...view(text, project.modules), project: { id: project.id, name: project.name }, restartEnabled, csrf, state: await state(parse(text), project), runtime: 'Configuración guardada en disco. El panel no verifica el proceso ni la conexión en vivo con Discord.' });
+      return send(res, 200, { ...view(text, project.modules), project: { id: project.id, name: project.name, manualRestart: Boolean(project.manualRestart), commands: project.id !== 'agent' }, restartEnabled: restartEnabled && !project.manualRestart, csrf, state: await state(parse(text), project), runtime: 'Configuración guardada en disco. El panel no verifica el proceso ni la conexión en vivo con Discord.' });
     }
     if (url.pathname === '/api/config' && req.method === 'PUT') {
       if (req.headers['x-panel-csrf'] !== csrf) return send(res, 403, { error: 'Recarga el panel para guardar.' });
@@ -115,7 +121,7 @@ const server = http.createServer(async (req, res) => {
         const temp = `${project.path}.${randomBytes(8).toString('hex')}.tmp`;
         try { await writeFile(temp, next, { mode: 0o600, flag: 'wx' }); await rename(temp, project.path); }
         finally { await unlink(temp).catch(() => {}); }
-        return send(res, 200, { ok: true, message: 'Guardado. Recrea el contenedor del bot para aplicar los cambios.' });
+        return send(res, 200, { ok: true, message: project.manualRestart ? 'Guardado. Reinicia manualmente el servicio systemd correspondiente para aplicar los cambios. La conexión del chat también requiere PANEL_AGENT_URL y PANEL_AGENT_TOKEN en el entorno del panel.' : 'Guardado. Recrea el contenedor del bot para aplicar los cambios.' });
       } finally { saving = false; }
     }
     const files = { '/agent.js': ['agent.js', 'text/javascript'], '/': ['index.html', 'text/html'], '/app.js': ['app.js', 'text/javascript'], '/help.js': ['help.js', 'text/javascript'], '/style.css': ['style.css', 'text/css'], '/logo.png': ['logo.png', 'image/png'] };

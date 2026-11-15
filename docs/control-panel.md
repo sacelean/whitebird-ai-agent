@@ -57,7 +57,7 @@ el servicio parado y desactivar la integración del panel.
 ## Instalar el lado del panel
 
 [integrations/control-pane/](../integrations/control-pane/) contiene los archivos
-del panel afectados: `server.js`, `agent-api.js`, `public/index.html` y
+del panel afectados: `server.js`, `agent-api.js`, `diagnostics.js`, `public/index.html` y
 `public/agent.js`. Los dos archivos existentes parten del main remoto consultado
 el 2026-11-14; revisar diferencias si el panel ha cambiado antes de incorporarlos.
 No sustituir el resto del panel ni sus dependencias.
@@ -86,3 +86,29 @@ mostrar un error genérico sin credenciales.
 
 La calidad de la síntesis y el truncamiento histórico del modelo siguen pendientes
 de validación real. La integración no añade comandos Discord ni modifica bots.
+
+
+## Diagnóstico del panel (2026-11-15)
+
+El chat del panel admite «diagnostica el panel», «¿por qué Recruitment no
+arranca?» y «revisa los logs del agente». La implementación reside en
+Whitebird-control-pane y se incluye una copia del adaptador en
+integrations/control-pane. Usa los esquemas actuales de config.js del panel,
+incluidos agentModules y agentDiscordModules. Incorpora los cambios sobre una
+revisión actual del panel y conserva sus archivos y dependencias restantes.
+
+Los diagnósticos se resuelven en el backend del panel con configuración guardada,
+comparaciones de conexiones, metadatos de archivos, comandos fijos de lectura y
+/health local. Funcionan aunque el agente o el modelo estén caídos. Las consultas
+WoWAudit conservan el flujo /ask existente. La respuesta sigue {tool, answer}.
+
+El navegador recibe resultados y pasos de corrección, con tool=panel_diagnostics.
+Los valores de configuración, logs originales y errores internos permanecen en
+el backend. Los logs se clasifican por patrones reconocidos en las últimas 60
+líneas, con límite de cinco segundos y 128 KiB por comando. Los permisos reales
+de Discord, la vigencia OAuth y cambios guardados pendientes de aplicar requieren
+comprobación adicional. Los errores de logs pueden ser históricos.
+
+Pruebas locales del panel: validación, secretos, comandos acotados, conexiones,
+exclusión de diagnósticos simultáneos y recorrido HTTP con CSRF y agente ausente.
+Pendiente de verificación en la VM con sus permisos, servicios y datos reales.

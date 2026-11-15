@@ -6,7 +6,7 @@ A simple, **read-only** natural-language assistant for WoWAudit MCP. Uses a loca
 
 The agent also provides a loopback HTTP service (`npm start`) for the Whitebird
 control panel. See [panel integration](docs/control-panel.md) for configuration,
-installation and verification. The CLI remains available when the service is
+installation, verification and local configuration/runtime diagnostics in the panel chat. The CLI remains available when the service is
 stopped. Do not run the CLI or OAuth login concurrently with the service: they
 share the OAuth session store.
 
