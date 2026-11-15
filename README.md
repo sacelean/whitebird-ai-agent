@@ -2,6 +2,10 @@
 
 A natural-language assistant for WoWAudit MCP and Whitebird bot administration. WoWAudit tools remain read-only. Administrative changes use reviewable proposals and explicit chat controls. Uses a local `llama-server` OpenAI-style chat endpoint at `127.0.0.1:8080`. No paid LLM API and no publicly exposed model listener.
 
+Revisión documental: 2026-11-15, contrastada con el código local de `5961e81`.
+Las funciones descritas están implementadas; esta revisión no comprueba qué
+release está ejecutándose en la VM.
+
 ## Control panel
 
 The agent also provides a loopback HTTP service (`npm start`) for the Whitebird
@@ -48,7 +52,7 @@ configuración. Por ejemplo:
 - «¿Qué bots conoces?».
 
 La pipeline de Whitebird-context publica el catálogo en el servidor. El agente
-lee `WHITEBIRD_CONTEXT_PATH` al arrancar y cada diez segundos, sin acceso a GitHub. Conserva una caché persistente
+lee `WHITEBIRD_CONTEXT_PATH` al arrancar y cada diez segundos, sin acceso a GitHub. Puede conservar una caché persistente opcional
 y usa `src/project-knowledge.js` como respaldo si no dispone de contexto válido.
 Las respuestas indican la revisión documental y los límites del despliegue.
 Véase [configuración y mantenimiento del contexto](docs/context-knowledge.md).
@@ -91,7 +95,7 @@ decir «olvida el contexto». Caduca a los 15 minutos y se pierde al reiniciar.
 
 - Use the OAuth-enabled MCP client revision and complete the browser login described in deploy/README.md. OAuth login and tool discovery against `https://wowaudit.com/mcp` were verified on Oracle on 2026-11-13; do not reuse ChatGPT tokens.
 - Tool selection depends on the local model's ability to follow strict JSON. The MCP client rejects unsupported tool choices and parameters. WoWAudit tools remain read-only.
-- Tiny models may perform poorly with many tools. The agent exposes a shortlist of read tools, only one call per question.
+- Tiny models may perform poorly with many tools. The agent exposes a shortlist of read tools. General WoWAudit questions use one MCP call; deterministic loot queries may also resolve a character and read the roster.
 - Discord adapter: see [setup and activation](docs/discord.md) for `/whitebird-ask`, role/channel restrictions and private replies. Requires the local agent service.
 - Not optimized for simultaneous users. Run one conversation at a time until benchmarking on Oracle A1.
 
@@ -160,3 +164,18 @@ El agente consulta decisiones de Recruitment y vinculaciones, cambios de roles,
 calderos, listas BIS y felicitaciones de WoW Sync mediante el panel en solo lectura.
 «Cuántos applies hemos aceptado» consulta SQLite; «cómo se acepta un apply»
 conserva la ayuda. Véase [herramientas, ejemplos y activación](docs/bot-data.md).
+
+## Guías de mantenimiento
+
+- [Contrato HTTP e integración del panel](docs/control-panel.md).
+- [Comando, autorización y operación en Discord](docs/discord.md).
+- [Consultas de registros y límites de SQLite](docs/bot-data.md).
+- [Recuentos de loot y personajes vinculados](docs/loot-ranking.md).
+- [Memoria temporal y continuaciones](docs/conversation-memory.md).
+- [Catálogo local y recogida del contexto](docs/context-knowledge.md).
+- [Publicación de documentación y restauraciones](docs/context-publication.md).
+
+Validar la fuente del chatbot con `node scripts/publish-knowledge.mjs --validate`
+y las pruebas del publicador con `node --test scripts/check-knowledge.mjs`.
+Los cambios locales no actualizan el catálogo hasta su publicación por la pipeline
+tras verificar el despliegue.

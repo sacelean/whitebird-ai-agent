@@ -38,9 +38,10 @@ En el environment oracle, conservar los secrets OCI_HOST, OCI_USER, OCI_SSH_KEY 
 OCI_KNOWN_HOSTS. La carpeta debe contener .allow-context-deploy y ser escribible
 por el usuario SSH. Node 22, tar y flock deben estar disponibles en SSH.
 
-## Único secret nuevo, solo en Whitebird-context
+## Credencial de lectura, solo en Whitebird-context
 
-Añadir CONTEXT_SOURCES_READ_TOKEN en el environment oracle: token fino de GitHub,
+Configurar CONTEXT_SOURCES_READ_TOKEN como secret de repositorio o del environment
+oracle (que puede sustituir el valor del repositorio): token fino de GitHub,
 Contents: read-only, con acceso a estos cinco repositorios:
 
 - sacelean/whitebird-wow-role-sync

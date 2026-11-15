@@ -1,7 +1,8 @@
 # Conexión con Whitebird-control-pane
 
-Implementado el 2026-11-14. No desplegado ni verificado contra Oracle/WoWAudit
-en esta sesión. Las pruebas usan dobles del modelo y MCP, sin datos de miembros.
+Revisión: 2026-11-15. Contrato contrastado con src/server.js,
+src/panel-client.js y src/conversation-memory.js en `5961e81`.
+Esta revisión no acredita el despliegue ni las conexiones reales de Oracle/WoWAudit.
 
 ## Contrato
 
@@ -9,8 +10,8 @@ Navegador → API del panel `POST /api/agent` (Host/Origin y CSRF existentes) �
 agente `POST /ask` (Bearer) → `askWhitebird()` → modelo local y MCP de lectura.
 El navegador nunca recibe el token del servicio ni la sesión OAuth.
 
-El agente escucha exclusivamente en `127.0.0.1:3090`; el panel conserva su
-puerto 3080. Ambos servicios deben estar en el mismo host. El modelo permanece
+El agente escucha exclusivamente en `127.0.0.1`, con puerto 3090 por defecto
+(configurable mediante AGENT_PORT); el panel usa 3080 por defecto. Ambos servicios deben estar en el mismo host. El modelo permanece
 en loopback:8080. No abrir estos puertos en Oracle.
 
 Entrada JSON: `{"question":"¿Qué eventos tenemos próximamente?"}`.
@@ -20,8 +21,9 @@ Preguntas: 1–1000 caracteres después de quitar espacios externos; cuerpo máx
 agent, agent-discord o panel para contextualizar preguntas de ayuda. El nombre
 del componente indicado en la pregunta tiene prioridad. Las respuestas de ayuda
 usan tool=null y los resúmenes documentados del agente. Solo una consulta en curso: HTTP 429 si está ocupado, sin cola
-persistente ni reintentos automáticos. Un fallo del modelo/MCP devuelve 502 sin
-detalles internos. `/health` exige el mismo Bearer e indica proceso activo y busy;
+persistente ni reintentos automáticos. Los fallos controlados de selección del modelo o consulta MCP se devuelven
+como una respuesta con `answer` explicativo. Una excepción no controlada devuelve
+502 sin detalles internos. `/health` exige el mismo Bearer e indica proceso activo y busy;
 no verifica la salud del modelo ni vigencia de OAuth.
 
 ## Instalar el agente
@@ -110,7 +112,7 @@ El componente seleccionado viaja como project opcional. Puedes preguntar «¿Có
 funciona?» o «¿Qué permisos necesita?» tras seleccionar un bot, o indicar otro
 por su nombre en la pregunta. La ayuda usa el catálogo descrito en el README
 del agente. Las preguntas de errores y diagnóstico conservan el recorrido local
-del panel. Requiere incorporar el enrutado correspondiente en Whitebird-control-pane.
+del panel. La revisión instalada de Whitebird-control-pane debe incluir ese enrutado.
 
 
 ## Herramientas administrativas del panel
@@ -140,3 +142,35 @@ PANEL_SYSTEMD_RESTART_ENABLED, más los permisos del usuario del panel para
 las unidades fijas. Un fallo parcial se muestra con el archivo aún guardado.
 Prueba en la instalación destino configuración, permisos y reinicio de cada
 componente antes de acreditar disponibilidad de producción.
+
+## Identidad y memoria en POST /ask
+
+Además de question y project, admite actor y conversationId opcionales. El proxy
+construye la identidad, sin tomarla de un campo editable del navegador. Para el
+panel se usa `actor=panel:<csrf>` y `conversationId=panel:<UUID>`; para Discord,
+`actor=discord:<servidor>:<usuario>` y `conversationId=discord:<canal>`. La clave combina
+ambos valores. Sin una pareja reconocida, la consulta se procesa sin memoria.
+
+actor admite hasta 160 caracteres, sin saltos de línea ni NUL; conversationId,
+hasta 100 caracteres de letras ASCII, dígitos, dos puntos, guion y guion bajo.
+Una identidad válida no sustituye Bearer, Host/Origin ni la autorización de Discord.
+El servidor exige `Host=127.0.0.1:<puerto>` y rechaza cualquier cabecera Origin:
+las llamadas se hacen desde el backend del panel, no directamente desde el navegador.
+
+La memoria conserva el último plan de lectura durante 15 minutos; no guarda
+resultados. El panel debe enviar el mismo UUID en las continuaciones de una pestaña.
+Cambiar project o recargar con otro UUID inicia otro contexto. Véase
+[memoria temporal](conversation-memory.md) para caducidad, borrado y límites.
+
+## Confirmaciones en POST /actions
+
+Usa las mismas restricciones HTTP y autenticación. Entrada:
+`{"action":"save","id":"<identificador de propuesta>","actor":"<mismo actor>"}`.
+Las acciones admitidas son save, apply, status y cancel; id contiene 32 caracteres
+hexadecimales en minúscula. La respuesta conserva tool=panel_management, answer
+y los campos de la operación del panel, incluida proposal cuando corresponda.
+La memoria de lectura no interviene en estas confirmaciones.
+
+Sin herramientas del panel configuradas devuelve 503; un fallo de la operación
+se comunica como 409 e indica revisar estado, caducidad o cambios de configuración.
+Repetir una acción conserva la semántica idempotente de la propuesta vigente.

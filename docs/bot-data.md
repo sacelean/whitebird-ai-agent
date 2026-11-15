@@ -1,5 +1,9 @@
 # Consultas de registros de Recruitment y WoW Sync
 
+Revisión: 2026-11-15. Fuentes: src/bot-data.js, src/agent.js y
+src/character-target.js en `5961e81`. Implementado en el agente; la disponibilidad
+del contrato y de los registros del panel debe verificarse en destino.
+
 El agente distingue ayuda (cómo funciona) de consultas de datos (cuántos, últimas,
 quién lleva). Las consultas reconocidas se resuelven con herramientas del panel
 antes del catálogo, del modelo y de WoWAudit. Panel y Discord comparten /ask.
@@ -77,7 +81,8 @@ guardan en SQLite. Ante una consulta no soportada se pide precisión o se indica
 su límite. No se reemplaza un dato ausente por una explicación o por una inferencia
 sobre Blizzard, Discord o WoWAudit. La ayuda documental sigue el flujo del contexto.
 
-Pruebas usan SQLite temporal y servidores HTTP locales, con el recorrido Discord
+Las pruebas del backend SQLite corresponden al panel. En este repositorio se
+usan dobles del panel y servidores HTTP locales, con el recorrido Discord
 → agente → cliente autenticado del panel. No se consulta producción en esta tarea.
 
 ## Presentación de los recuentos

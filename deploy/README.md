@@ -1,12 +1,17 @@
 # Despliegue en Oracle Cloud
 
-## Estado comprobado el 13 de noviembre de 2026
+## Evidencia histórica del 13 de noviembre de 2026
 
-- Release activa en la VM: `20261113153958-1` (despliegue manual por SSH).
+Esta comprobación no identifica la release actual. Revisión documental del
+2026-11-15: consultar la última pipeline y verificar la revisión en la VM antes
+de afirmar un despliegue vigente.
+
+- Release observada entonces en la VM: `20261113153958-1` (despliegue manual por SSH).
 - OAuth, modelo local y conexión MCP verificados; 12 pruebas pasan en la VM.
 - La consulta de próximos eventos ejecuta `list_events` para Whitebird (66082).
-- Pendiente mejorar la presentación: en la prueba real el modelo copió JSON y
-  lo truncó al alcanzar el límite de salida, en lugar de resumirlo en español.
+- En esa prueba el modelo copió JSON y lo truncó. El código actual incluye
+  formato legible y respaldo determinista en src/result-format.js y src/agent.js;
+  la calidad real del modelo requiere una consulta en la instalación destino.
 
 ## Procedimiento de despliegue
 

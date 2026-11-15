@@ -1,6 +1,7 @@
 # Consultar desde Discord
 
-Implementado el 2026-11-14. Pendiente de despliegue y prueba real en Discord.
+Revisión: 2026-11-15. Implementado en src/discord.js y src/server.js.
+Esta revisión documental no verifica el despliegue ni una consulta real en Discord.
 
 Discord → bot dedicado `/whitebird-ask pregunta:…` → API local `/ask` → modelo y
 MCP existentes. El adaptador no abre puertos ni accede al almacén OAuth. Panel
@@ -57,7 +58,9 @@ autorizado. Respuesta privada (ephemeral), sin menciones, y recorte explícito s
 supera el tamaño admitido. Espera máxima del backend: cinco minutos. Cada usuario
 tiene 30 segundos entre consultas; el límite se reinicia al reiniciar el bot.
 Las respuestas pueden contener datos de WoWAudit: elegir roles con acceso al
-equipo configurado. No hay conversaciones persistentes ni historial.
+equipo configurado. Hay memoria temporal de tema y filtros durante 15 minutos por usuario, servidor
+y canal; no conserva resultados ni sobrevive a reinicios. Véase
+[memoria y continuaciones](conversation-memory.md).
 
 Comprobar rechazo desde otro canal/rol, agente parado y consulta simultánea
 desde el panel. Los fallos muestran un mensaje genérico sin credenciales.

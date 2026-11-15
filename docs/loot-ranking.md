@@ -1,7 +1,9 @@
 # Recuento de loot por personaje
 
 Revisión: 2026-11-15. Implementado en src/loot-ranking.js y src/agent.js;
-pendiente de merge/despliegue y verificación en la VM.
+incorporado al código local de `5961e81` junto con menciones y continuaciones.
+No se ha verificado la revisión en ejecución ni una consulta real en la VM en
+esta revisión documental.
 
 «Quién ha looteado más» y «quién ha recibido más botín» llaman directamente a
 loot_history con limit=200. El cliente MCP conserva el equipo configurado e
