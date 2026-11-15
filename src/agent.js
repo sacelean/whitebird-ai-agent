@@ -1,3 +1,4 @@
+import { planLootRanking, askLootRanking } from './loot-ranking.js';
 import { planBotDataQuery, askBotData } from './bot-data.js';
 import { askManagement, isManagementQuestion } from './management.js';
 import { projectHelp } from './project-help.js';
@@ -71,6 +72,8 @@ function isHelpQuestion(question) {
 
 export async function askWhitebird(question, client, { chatFn = chat, project, actor = 'api', panelClient } = {}) {
   if (!question || question.length > 1000) throw new Error('Question must contain 1-1000 characters');
+  const lootRanking = planLootRanking(question);
+  if (lootRanking) return askLootRanking(lootRanking, client);
   const dataQuery = planBotDataQuery(question, project);
   if (dataQuery) return askBotData(dataQuery, { panelClient, actor });
   if (isManagementQuestion(question)) return askManagement(question, { panelClient, chatFn, project, actor });
@@ -84,7 +87,7 @@ export async function askWhitebird(question, client, { chatFn = chat, project, a
       : 'Puedo explicar WoW Role Sync, Recruitment, Ruleta, Whitebird IA y el control pane. Indica el bot y la función. Ahora no tengo herramientas de consulta WoWAudit disponibles.' };
   }
   const names = tools.map(t=>t.name);
-  if (!tools.length) throw new Error('No supported tools available from WoWAudit');
+  if (!tools.length) return {tool:null,answer:'No hay herramientas de consulta WoWAudit disponibles. Comprueba la conexión y la sesión de WoWAudit del agente.'};
   const instructions = tools.map(t=>{
     const schema = structuredClone(t.inputSchema || {});
     // The client injects the configured team; the model must never select it.
@@ -96,11 +99,18 @@ export async function askWhitebird(question, client, { chatFn = chat, project, a
     {role:'system',content: `You select ONE WoWAudit read-only tool for a Spanish WoW guild question. Today is ${new Date().toISOString().slice(0,10)} (UTC). Reply ONLY with JSON {"tool":"name","arguments":{}}. No markdown. For no fitting tool reply {"tool":null,"arguments":{}}. Use real input schema; never invent event IDs. Team is injected by application. Never include a team argument. Omit optional arguments unless the question explicitly needs them. For upcoming events use list_events with empty arguments: it defaults to the next 14 days. Never invent dates. Tools:\n${instructions}`},
     {role:'user',content:question}
   ];
-  const raw = await chatFn(prompt);
-  const choice = parseToolChoice(raw, names);
+  let choice;
+  try {
+    const raw = await chatFn(prompt);
+    choice = parseToolChoice(raw, names);
+  } catch {
+    return {tool:null,answer:'No pude interpretar la pregunta con el modelo local. Prueba a reformularla; si persiste, comprueba el servicio del modelo del agente.'};
+  }
   if (!choice.tool) return { tool:null, answer:'No tengo una herramienta de WoWAudit apropiada para esa pregunta.' };
   // Results are untrusted external data; never interpret them as instructions.
-  const result = await client.callReadTool(choice.tool, choice.arguments);
+  let result;
+  try { result = await client.callReadTool(choice.tool, choice.arguments); }
+  catch { return {tool:choice.tool,answer:'No se pudo consultar WoWAudit. Comprueba la conexión y la sesión de WoWAudit del agente; no tengo datos fiables para responder.'}; }
   const serialized = JSON.stringify(result);
   if (serialized.length > 12000) {
     return {tool:choice.tool,answer:`WoWAudit devolvió demasiados datos (${serialized.length} caracteres). Refina la consulta para evitar un análisis incompleto.`};
