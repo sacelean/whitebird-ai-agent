@@ -78,3 +78,14 @@ sobre Blizzard, Discord o WoWAudit. La ayuda documental sigue el flujo del conte
 
 Pruebas usan SQLite temporal y servidores HTTP locales, con el recorrido Discord
 → agente → cliente autenticado del panel. No se consulta producción en esta tarea.
+
+## Presentación de los recuentos
+
+El resumen de Recruitment se redacta en frases breves, con singular/plural y sin
+mostrar categorías a cero. Las decisiones pendientes siguen diferenciadas de las
+completadas. Las fechas se presentan en español y horario de Madrid, sin la hora
+UTC ni etiquetas internas. La fecha más antigua solo aparece en recuentos globales,
+no como si fuera el inicio de la captura ni el primer registro de un personaje.
+Una única aclaración conserva el límite: no se incluyen solicitudes abiertas ni
+decisiones antiguas no guardadas. La respuesta se construye desde los números del
+panel sin llamar al modelo; se mantiene el mismo contrato de herramientas.
