@@ -1,3 +1,4 @@
+import { resolveQuestionMentions, resolveWowCharacter } from './character-target.js';
 import { planLootRanking, askLootRanking } from './loot-ranking.js';
 import { planBotDataQuery, askBotData } from './bot-data.js';
 import { askManagement, isManagementQuestion } from './management.js';
@@ -49,11 +50,12 @@ export function parseToolChoice(output, validNames) {
 }
 
 const SHORTLIST = [
-  'team_audit', 'list_events', 'get_event', 'event_insights',
+  'get_character', 'team_audit', 'list_events', 'get_event', 'event_insights',
   'loot_history', 'trinket_status', 'wishlist_upgrades', 'find_recipe_crafters'
 ];
 
 const CAPABILITIES = {
+  get_character: 'Consultar un personaje concreto.',
   team_audit: 'Revisar la auditoría del equipo.',
   list_events: 'Consultar próximos eventos y raids.',
   get_event: 'Consultar los detalles de un evento si indicas su ID.',
@@ -72,9 +74,17 @@ function isHelpQuestion(question) {
 
 export async function askWhitebird(question, client, { chatFn = chat, project, actor = 'api', panelClient } = {}) {
   if (!question || question.length > 1000) throw new Error('Question must contain 1-1000 characters');
+  const references=await resolveQuestionMentions(question,{panelClient,actor});
+  if(references.answer)return {tool:null,answer:references.answer};
+  question=references.question;
   const lootRanking = planLootRanking(question);
-  if (lootRanking) return askLootRanking(lootRanking, client);
+  if (lootRanking) return askLootRanking(lootRanking, client, {target:references.targets[0]});
   const dataQuery = planBotDataQuery(question, project);
+  if (dataQuery && references.targets.length) {
+    if (!dataQuery.tool || !['recruitment_summary','recruitment_recent','wow_links','wow_sync_history','wow_promotions'].includes(dataQuery.tool)) return {tool:null,answer:'Esa consulta no permite filtrar un personaje concreto. Indica qué datos de su personaje vinculado quieres consultar.'};
+    dataQuery.arguments.character=references.targets[0].character;
+    dataQuery.arguments.realm=references.targets[0].realm;
+  }
   if (dataQuery) return askBotData(dataQuery, { panelClient, actor });
   if (isManagementQuestion(question)) return askManagement(question, { panelClient, chatFn, project, actor });
   const documentation = projectHelp(question, project);
@@ -108,6 +118,12 @@ export async function askWhitebird(question, client, { chatFn = chat, project, a
   }
   if (!choice.tool) return { tool:null, answer:'No tengo una herramienta de WoWAudit apropiada para esa pregunta.' };
   // Results are untrusted external data; never interpret them as instructions.
+  if(references.targets.length){
+    const schema=tools.find(t=>t.name===choice.tool)?.inputSchema;
+    if(!schema?.properties?.character)return {tool:null,answer:'La herramienta seleccionada no permite consultar un personaje concreto. No voy a sustituir su consulta por datos de todo el equipo.'};
+    try {const identity=await resolveWowCharacter(client,references.targets[0].selector);choice.arguments.character=identity.id;}
+    catch{return {tool:null,answer:'No pude identificar de forma única en WoWAudit el personaje y reino vinculados. Revisa su presencia en el equipo.'};}
+  }
   let result;
   try { result = await client.callReadTool(choice.tool, choice.arguments); }
   catch { return {tool:choice.tool,answer:'No se pudo consultar WoWAudit. Comprueba la conexión y la sesión de WoWAudit del agente; no tengo datos fiables para responder.'}; }
