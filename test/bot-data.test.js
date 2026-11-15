@@ -102,3 +102,25 @@ test('natural summaries preserve pending states, singular, zero and calendar fil
  assert.match(text,/coinciden con «Alpha» el 15 de noviembre de 2026/);assert.doesNotMatch(text,/más antigua/);
  assert.throws(()=>formatBotData('recruitment_summary',{...single,acceptedCompleted:2}),/Inconsistent/);
 });
+
+
+test('latest recruited queries select one completed acceptance without model or MCP',async()=>{
+ const expected={project:'recruitment',decision:'aceptada',status:'completed',limit:1};
+ for(const question of ['quien ha sido el ultimo en ser reclutado','¿Quién fue la última reclutada?','quién ha sido el último apply aceptado']){
+  const plan=planBotDataQuery(question);
+  assert.equal(plan.tool,'recruitment_recent');assert.deepEqual(plan.arguments,expected);
+  assert.equal(projectHelp(question),null);
+ }
+ assert.equal(planBotDataQuery('lista los últimos 3 reclutados').arguments.limit,3);
+ assert.equal(planBotDataQuery('lista los últimos 3 reclutados').arguments.decision,'aceptada');
+ assert.equal(planBotDataQuery('quién fue el último apply rechazado').arguments.decision,'rechazada');
+ assert.equal(planBotDataQuery('cómo se recluta a alguien'),null);
+ const question='quien ha sido el ultimo en ser reclutado';
+ const result=await askWhitebird(question,{listAllowedTools:()=>assert.fail('Unexpected MCP')},{chatFn:()=>assert.fail('Unexpected model'),panelClient:{call:async(tool,args)=>{
+  assert.equal(tool,'recruitment_recent');assert.deepEqual(args,expected);
+  return {available:true,total:2,partial:true,rows:[{character:'Ejemplo',realm:'Reino',decision:'aceptada',status:'completed',date:'2026-11-15 12:00:00'}],scope:'Solo decisiones registradas.'};
+ }}});
+ assert.match(result.answer,/Ejemplo-Reino/);assert.match(result.answer,/aceptada, completada/);
+ const failed=await askWhitebird(question,{}, {panelClient:{call:async()=>{throw Error('offline');}}});
+ assert.match(failed.answer,/base de datos a través del panel/);assert.doesNotMatch(failed.answer,/WoWAudit/);
+});
