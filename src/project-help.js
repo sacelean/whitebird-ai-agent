@@ -1,3 +1,4 @@
+import { planBotDataQuery } from './bot-data.js';
 import { contextKnowledge } from './context-knowledge.js';
 import { projects as bundledProjects } from './project-knowledge.js';
 
@@ -8,6 +9,7 @@ const catalog = projects => projects.map(project => `• ${project.name} — ${p
 export const PROJECT_IDS = ['wow', 'recruitment', 'roulette', 'agent', 'agent-discord', 'panel'];
 
 export function projectHelp(question, selectedProject, context = contextKnowledge.snapshot()) {
+  if (planBotDataQuery(question, selectedProject)) return null;
   const projects = bundledProjects.map(p => {
     const entry = context.catalog?.projects.find(e => e.id === p.id);
     return entry ? { ...p, ...entry, aliases: p.aliases, topics: p.topics.map((t, i) => ({ ...t, text: entry.topics[i] })) } : p;

@@ -1,3 +1,4 @@
+import { planBotDataQuery, askBotData } from './bot-data.js';
 import { askManagement, isManagementQuestion } from './management.js';
 import { projectHelp } from './project-help.js';
 import { formatToolResult, isReadableAnswer } from './result-format.js';
@@ -70,6 +71,8 @@ function isHelpQuestion(question) {
 
 export async function askWhitebird(question, client, { chatFn = chat, project, actor = 'api', panelClient } = {}) {
   if (!question || question.length > 1000) throw new Error('Question must contain 1-1000 characters');
+  const dataQuery = planBotDataQuery(question, project);
+  if (dataQuery) return askBotData(dataQuery, { panelClient, actor });
   if (isManagementQuestion(question)) return askManagement(question, { panelClient, chatFn, project, actor });
   const documentation = projectHelp(question, project);
   if (documentation) return documentation;
@@ -77,7 +80,7 @@ export async function askWhitebird(question, client, { chatFn = chat, project, a
   if (isHelpQuestion(question)) {
     const capabilities = tools.map(tool => `• ${CAPABILITIES[tool.name]}`).join('\n');
     return { tool: null, answer: capabilities
-      ? `Puedo consultar datos de WoWAudit en modo solo lectura:\n${capabilities}\n\nTambién puedo explicar WoW Role Sync, Recruitment, Ruleta, Whitebird IA y el control pane. Indica el bot y la función.\n\nPor ejemplo: «¿Qué eventos tenemos próximamente?» o «¿Qué loot hemos recibido?». Con las herramientas del panel configuradas también puedo consultar la configuración real, investigar errores y preparar cambios para guardar y aplicar desde los controles del chat.`
+      ? `Puedo consultar datos de WoWAudit en modo solo lectura:\n${capabilities}\n\nTambién puedo explicar WoW Role Sync, Recruitment, Ruleta, Whitebird IA y el control pane. Indica el bot y la función.\n\nPor ejemplo: «¿Qué eventos tenemos próximamente?» o «¿Qué loot hemos recibido?». Con las herramientas del panel configuradas también puedo consultar decisiones de Recruitment y registros de WoW Sync, consultar la configuración real, investigar errores y preparar cambios para guardar y aplicar desde los controles del chat.`
       : 'Puedo explicar WoW Role Sync, Recruitment, Ruleta, Whitebird IA y el control pane. Indica el bot y la función. Ahora no tengo herramientas de consulta WoWAudit disponibles.' };
   }
   const names = tools.map(t=>t.name);
