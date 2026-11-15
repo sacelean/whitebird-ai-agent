@@ -77,7 +77,7 @@ Recruitment, Ruleta, Whitebird IA y el control pane. Indica el nombre del bot o
 un comando, por ejemplo «¿Cómo se acepta un apply?», «¿Cómo funciona el ranking
 de alters?» o «¿Cómo sincroniza roles WoW Role Sync?». «¿Qué bots conoces?»
 muestra el catálogo. Se usa el mismo conocimiento documentado del servicio del
-agente que en el panel. Las preguntas son independientes. La explicación de
+agente que en el panel. La memoria temporal se separa por usuario, servidor y canal. Conserva tema y filtros durante 15 minutos; «olvida el contexto» la borra. No conserva resultados de consultas. La explicación de
 funcionamiento se responde directamente y conserva los límites de acceso y las
 respuestas privadas del adaptador. La descripción actualizada de /whitebird-ask
 se aplica al registrar de nuevo el comando con el procedimiento anterior.

@@ -155,3 +155,5 @@ export async function askBotData(plan,{panelClient,actor='api'}={}){
  try {return formatBotData(plan.tool,await panelClient.call(plan.tool,plan.arguments,actor));}
  catch {return {tool:null,answer:'No se pudo consultar la base de datos a través del panel. Comprueba la conexión y que ambos servicios estén actualizados; no tengo un resultado fiable.'};}
 }
+
+export { period as parseQueryPeriod };

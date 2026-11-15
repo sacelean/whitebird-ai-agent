@@ -7,8 +7,9 @@ pendiente de merge/despliegue y verificación en la VM.
 loot_history con limit=200. El cliente MCP conserva el equipo configurado e
 inyecta team; el usuario y el modelo no lo seleccionan. El periodo por defecto de
 WoWAudit es de 30 días y la respuesta muestra from/to devueltos por la fuente.
-No se interpreta como todo el histórico. Otros periodos o filtros reciben una
-petición de precisión con el alcance actualmente soportado; no se ignoran.
+No se interpreta como todo el histórico. Se admiten hoy, ayer, esta semana, semana pasada, este mes, mes pasado, este año,
+en YYYY, últimos N días y rangos YYYY-MM-DD. Filtros no soportados reciben una
+petición de precisión y no se ignoran.
 
 Cada fila es una asignación registrada. Se agrupa por el nombre de personaje que
 WoWAudit devuelve, contando todas las categorías, incluidos bonus, transfiguración
@@ -53,7 +54,7 @@ Se consulta una persona por pregunta; los nombres sin @ son personajes directos.
 Ejemplos: «cuantos items ha looteado @usuario» seleccionando una mención de Discord,
 «cuantos items ha looteado Personaje» o «cuantos items ha looteado Nombre-reino».
 WoWAudit get_character identifica el nombre/reino y devuelve el ID; loot_history
-se filtra por ese ID. No se suman alters. Mantiene el periodo de 30 días, todas las
+se filtra por ese ID. No se suman alters. Mantiene el periodo solicitado (30 días por defecto), todas las
 categorías y el rechazo de recuentos incompletos. No usa el modelo para sumar.
 
 La resolución de menciones ocurre antes de todos los enrutadores, también en el
@@ -66,3 +67,14 @@ filtra un personaje solo por su nombre ignorando el reino vinculado.
 Desplegar primero el panel con wow_resolve_user y filtros realm, después el agente.
 Se reutilizan PANEL_TOOLS_URL, PANEL_TOOLS_TOKEN y PANEL_AGENT_TOOLS_TOKEN. No hay
 secretos nuevos, cambios de esquema, migraciones ni despliegues de Recruitment/Sync.
+
+## Continuaciones y mínimo
+
+«¿Y el que menos?» conserva las fechas concretas de la consulta previa y vuelve a
+consultar loot_history y list_roster. El mínimo compara el roster actual, incluidos
+personajes con cero ítems. No reconstruye el roster histórico ni acredita asistencia;
+las asignaciones a personajes que ya no figuran en el roster no participan en ese
+mínimo. Si el roster está incompleto, contiene nombres repetidos sin identidad
+resoluble o no está disponible, no declara un mínimo. También se conserva el límite
+de 200 registros completos de loot. Los empates muestran diez nombres y el resto
+como cantidad. «Este mes» u otro periodo explícito sustituye las fechas anteriores.

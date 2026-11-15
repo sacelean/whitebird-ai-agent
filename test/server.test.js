@@ -20,7 +20,7 @@ test('API authenticates backend requests and blocks browsers and hostile Host', 
 });
 test('API validates bounded input and sanitizes failures', async t => {
   const { request } = await fixture(t, async () => { throw Error('secret-token'); });
-  for (const body of [{}, null, { question: 4 }, { question: ' ' }, { question: 'x'.repeat(1001) }, '{']) assert.equal((await request(body)).status, 400);
+  for (const body of [{}, null, { question: 4 }, { question: ' ' }, { question: 'x'.repeat(1001) }, {question:'Eventos',conversationId:42}, {question:'Eventos',conversationId:'x'.repeat(101)}, {question:'Eventos',conversationId:'bad session'}, '{']) assert.equal((await request(body)).status, 400);
   assert.equal((await request('x'.repeat(9000))).status, 413);
   assert.equal((await request({}, { 'Content-Type': 'text/plain' })).status, 415);
   const response = await request(); assert.equal(response.status, 502);
