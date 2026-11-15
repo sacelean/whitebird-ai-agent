@@ -30,6 +30,8 @@ test('relative dates use Madrid, explicit invalid dates and ambiguous intervals 
  assert.match(planBotDataQuery('cuantos applies en los últimos meses').answer,/Concreta/);
  assert.match(planBotDataQuery('cuantos applies el 1/11/2026').answer,/YYYY-MM-DD/);
  assert.match(planBotDataQuery('cuantos applies en enero').answer,/mes y año/);
+ assert.equal(planBotDataQuery('cuantos applies de \"Mayo\"').arguments.from,undefined);
+ assert.equal(planBotDataQuery('cuantos applies de \"Mayo\"').arguments.character,'Mayo');
  assert.match(planBotDataQuery('cuantos applies desde 2026-12-01 hasta 2026-01-01').answer,/posterior/);
  assert.equal(planBotDataQuery('quien lleva calderos lunes').arguments.weekday,'monday');
  assert.match(planBotDataQuery('quien lleva calderos lunes y martes').answer,/un solo día/);

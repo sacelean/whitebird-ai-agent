@@ -64,7 +64,7 @@ export function planBotDataQuery(question,selectedProject,{now=Date.now()}={}){
   else if(/\bhoy\b|\bmanana\b/.test(text))result.weekday=['sunday','monday','tuesday','wednesday','thursday','friday','saturday'][new Date(dayShift(today(now),/manana/.test(text)?1:0)+'T12:00:00Z').getUTCDay()];
   else if(/ayer|semana pasada|mes|\d{4}-\d{2}-\d{2}/.test(text))return {answer:'Solo puedo consultar el reparto semanal actual de calderos, no reconstruir entregas o asignaciones pasadas.'};
  }else{
-  const dates=period(text,now);if(dates.error)return {answer:dates.error};
+  const dates=period(text.replace(/["“][^"”]*["”]/g,''),now);if(dates.error)return {answer:dates.error};
   if((tool==='wow_links'||tool==='wow_bis_summary')&&(dates.from||dates.to))return {answer:'Esta consulta muestra datos actuales guardados, sin reconstrucción histórica por fechas. Para periodos puedo consultar decisiones, cambios de roles o felicitaciones registradas.'};
   Object.assign(result,dates);
  }
