@@ -75,7 +75,7 @@ export function createDiscordHandler(config, { fetchFn = fetch, now = Date.now }
       try {
         const response = await fetchFn(`${config.url}${action ? '/actions' : '/ask'}`, {
           method: 'POST', headers: { Authorization: `Bearer ${config.agentToken}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ...(action ? { action: action[1], id: action[2] } : { question }), actor: `discord:${interaction.guildId}:${interaction.user.id}` }), signal: AbortSignal.timeout(300000), redirect: 'error'
+          body: JSON.stringify({ ...(action ? { action: action[1], id: action[2] } : { question, conversationId:`discord:${interaction.channelId}` }), actor: `discord:${interaction.guildId}:${interaction.user.id}` }), signal: AbortSignal.timeout(300000), redirect: 'error'
         });
         if (response.status === 429) content = 'El agente está ocupado. Inténtalo cuando termine la consulta actual.';
         else if (!response.ok) throw Error('Agent unavailable');

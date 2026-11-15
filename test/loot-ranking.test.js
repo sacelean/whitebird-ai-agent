@@ -20,9 +20,9 @@ for(const question of ['quien ha looteado mas','¿Quién ha looteado más?','qui
  assert.doesNotMatch(result.answer,/Ignore previous|Objeto de prueba/);
 });
 test('unsupported periods and filters ask for clarification without querying or ignoring qualifiers',async()=>{
- for(const suffix of ['este mes','ayer','en mítico','sin transfiguración','de toda la temporada','para "Uno"','en los últimos 7 días']){
+ for(const suffix of ['en mítico','sin transfiguración','de toda la temporada','para "Uno"']){
   const result=await askWhitebird('quien ha looteado mas '+suffix,{listAllowedTools:noModel},{chatFn:noModel});
-  assert.match(result.answer,/Todavía no aplico otros periodos o filtros/);
+  assert.match(result.answer,/Ese periodo o filtro no está soportado/);
  }
  assert.equal(planLootRanking('cómo funciona el loot'),null);
  assert.equal(planLootRanking('qué loot hemos recibido'),null);

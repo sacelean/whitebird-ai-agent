@@ -1,3 +1,4 @@
+import {createConversationMemory} from './conversation-memory.js';
 import { contextKnowledge } from './context-knowledge.js';
 import { createPanelClient } from './panel-client.js';
 import { proposalAnswer } from './management.js';
@@ -8,7 +9,7 @@ import { fileURLToPath } from 'node:url';
 import { PROJECT_IDS } from './project-help.js';
 import { askWhitebird } from './agent.js';
 
-export function createAgentServer({ client, token, port = 3090, ask = askWhitebird, panelClient = createPanelClient() } = {}) {
+export function createAgentServer({ client, token, port = 3090, ask = askWhitebird, panelClient = createPanelClient(), memory = createConversationMemory() } = {}) {
   if (typeof token !== 'string' || token.length < 32) throw new Error('AGENT_API_TOKEN must contain at least 32 characters');
   if (!client) throw new Error('MCP client required');
   let busy = false;
@@ -36,6 +37,7 @@ export function createAgentServer({ client, token, port = 3090, ask = askWhitebi
       input = JSON.parse(Buffer.concat(chunks).toString('utf8'));
     } catch { return send(res, 400, { error: 'Invalid JSON' }); }
     if (input?.actor !== undefined && (typeof input.actor !== 'string' || input.actor.length > 160 || /[\r\n\0]/.test(input.actor))) return send(res, 400, { error: 'Invalid actor' });
+    if (input?.conversationId !== undefined && (typeof input.conversationId !== 'string' || input.conversationId.length > 100 || !/^[a-zA-Z0-9:_-]+$/.test(input.conversationId))) return send(res, 400, {error:'Invalid conversation'});
     if (req.url === '/actions') {
       if (!panelClient) return send(res, 503, { error: 'Herramientas del panel sin configurar.' });
       try {
@@ -49,13 +51,15 @@ export function createAgentServer({ client, token, port = 3090, ask = askWhitebi
     if (busy) return send(res, 429, { error: 'El agente está ocupado. Espera a que termine la consulta actual.' });
     busy = true;
     try {
-      const result = await ask(input.question.trim(), client, { project: input.project, actor: input.actor || 'api', panelClient });
+      const result = await memory.ask(input.question.trim(), client, { project: input.project, actor: input.actor || 'api', conversationId:input.conversationId, panelClient }, ask);
       send(res, 200, result);
     } catch {
       // Never send upstream errors, OAuth details or model data to the caller.
       send(res, 502, { error: 'No se pudo completar la consulta. Comprueba el modelo y la sesión de WoWAudit.' });
     } finally { busy = false; }
   });
+  const expiry=setInterval(()=>memory.prune(),60000);expiry.unref();
+  server.on('close',()=>{clearInterval(expiry);memory.clear();});
   server.requestTimeout = 15000;
   server.headersTimeout = 10000;
   return server;

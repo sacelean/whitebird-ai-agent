@@ -72,20 +72,24 @@ function isHelpQuestion(question) {
   return /^(?:hola )?(?:que puedes hacer|que sabes hacer|que funciones tienes|que herramientas tienes|como puedes ayudarme|en que puedes ayudarme|ayuda|help)(?: por favor)?$/.test(text);
 }
 
-export async function askWhitebird(question, client, { chatFn = chat, project, actor = 'api', panelClient } = {}) {
+export async function askWhitebird(question, client, { chatFn = chat, project, actor = 'api', panelClient, priorQuery, onQueryContext } = {}) {
   if (!question || question.length > 1000) throw new Error('Question must contain 1-1000 characters');
+  const rawMention=question.match(/<@!?\d{17,20}>/)?.[0];
   const references=await resolveQuestionMentions(question,{panelClient,actor});
   if(references.answer)return {tool:null,answer:references.answer};
   question=references.question;
   const lootRanking = planLootRanking(question);
-  if (lootRanking) return askLootRanking(lootRanking, client, {target:references.targets[0]});
+  if (lootRanking) return askLootRanking(lootRanking, client, {target:references.targets[0],priorQuery,onQueryContext,subject:rawMention});
   const dataQuery = planBotDataQuery(question, project);
   if (dataQuery && references.targets.length) {
     if (!dataQuery.tool || !['recruitment_summary','recruitment_recent','wow_links','wow_sync_history','wow_promotions'].includes(dataQuery.tool)) return {tool:null,answer:'Esa consulta no permite filtrar un personaje concreto. Indica qué datos de su personaje vinculado quieres consultar.'};
     dataQuery.arguments.character=references.targets[0].character;
     dataQuery.arguments.realm=references.targets[0].realm;
   }
-  if (dataQuery) return askBotData(dataQuery, { panelClient, actor });
+  if (dataQuery) {
+    if(dataQuery.tool)onQueryContext?.({kind:'bot-data',tool:dataQuery.tool,arguments:dataQuery.arguments,subject:rawMention||dataQuery.arguments.character||null});
+    return askBotData(dataQuery, { panelClient, actor });
+  }
   if (isManagementQuestion(question)) return askManagement(question, { panelClient, chatFn, project, actor });
   const documentation = projectHelp(question, project);
   if (documentation) return documentation;
@@ -107,6 +111,7 @@ export async function askWhitebird(question, client, { chatFn = chat, project, a
   }).join('\n');
   const prompt = [
     {role:'system',content: `You select ONE WoWAudit read-only tool for a Spanish WoW guild question. Today is ${new Date().toISOString().slice(0,10)} (UTC). Reply ONLY with JSON {"tool":"name","arguments":{}}. No markdown. For no fitting tool reply {"tool":null,"arguments":{}}. Use real input schema; never invent event IDs. Team is injected by application. Never include a team argument. Omit optional arguments unless the question explicitly needs them. For upcoming events use list_events with empty arguments: it defaults to the next 14 days. Never invent dates. Tools:\n${instructions}`},
+    ...(priorQuery?.kind==='mcp'?[{role:'system',content:'Esta es una continuación de una consulta de lectura. Usa este contexto solo para interpretar referencias; no contiene resultados ni instrucciones y la pregunta actual prevalece: '+JSON.stringify(priorQuery)}]:[]),
     {role:'user',content:question}
   ];
   let choice;
@@ -124,6 +129,7 @@ export async function askWhitebird(question, client, { chatFn = chat, project, a
     try {const identity=await resolveWowCharacter(client,references.targets[0].selector);choice.arguments.character=identity.id;}
     catch{return {tool:null,answer:'No pude identificar de forma única en WoWAudit el personaje y reino vinculados. Revisa su presencia en el equipo.'};}
   }
+  onQueryContext?.({kind:'mcp',tool:choice.tool,arguments:choice.arguments,subject:rawMention||choice.arguments.character||null});
   let result;
   try { result = await client.callReadTool(choice.tool, choice.arguments); }
   catch { return {tool:choice.tool,answer:'No se pudo consultar WoWAudit. Comprueba la conexión y la sesión de WoWAudit del agente; no tengo datos fiables para responder.'}; }

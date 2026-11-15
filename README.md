@@ -54,8 +54,7 @@ Las respuestas indican la revisión documental y los límites del despliegue.
 Véase [configuración y mantenimiento del contexto](docs/context-knowledge.md).
 
 El panel puede enviar `project` en POST /ask: wow, recruitment, roulette, agent,
-agent-discord o panel. Los nombres explícitos tienen prioridad. Cada pregunta
-se procesa por separado; la ayuda mantiene `{tool: null, answer}`.
+agent-discord o panel. Los nombres explícitos tienen prioridad. La memoria temporal conserva consultas y filtros durante 15 minutos por conversación; la ayuda mantiene `{tool: null, answer}`.
 
 ## Respuestas legibles
 
@@ -83,6 +82,10 @@ Las menciones reales de Discord usan el personaje y reino vinculados en el panel
 los nombres sin @ se consultan directamente como personajes. Por ejemplo:
 «cuantos items ha looteado @usuario» o «cuantos items ha looteado Nombre-reino».
 Requiere desplegar primero el panel actualizado; no hay variables nuevas.
+
+La [memoria temporal](docs/conversation-memory.md) permite continuaciones como
+«¿y el que menos?», conserva el periodo y vuelve a consultar WoWAudit. Puedes
+decir «olvida el contexto». Caduca a los 15 minutos y se pierde al reiniciar.
 
 ## Known limitations
 
