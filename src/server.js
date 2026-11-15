@@ -1,3 +1,4 @@
+import { contextKnowledge } from './context-knowledge.js';
 import { createPanelClient } from './panel-client.js';
 import { proposalAnswer } from './management.js';
 import http from 'node:http';
@@ -67,6 +68,8 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   const client = new WhitebirdMcpClient();
   const server = createAgentServer({ client, token: process.env.AGENT_API_TOKEN, port });
   try {
+    const stopContext = await contextKnowledge.start();
+    server.on('close', stopContext);
     await client.connect();
     server.listen(port, '127.0.0.1', () => console.log(`Whitebird agent: http://127.0.0.1:${port}`));
     server.on('error', async () => { await client.close(); process.exitCode = 1; });

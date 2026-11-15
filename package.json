@@ -12,7 +12,8 @@
     "discord:register": "node src/discord.js --register",
     "ask": "node src/cli.js",
     "test": "node --test",
-    "login": "node ../whitebird-wowaudit-mcp/src/login.js"
+    "login": "node ../whitebird-wowaudit-mcp/src/login.js",
+    "context:validate": "node scripts/validate-context.mjs"
   },
   "dependencies": {
     "@whitebird/wowaudit-mcp": "file:../whitebird-wowaudit-mcp",

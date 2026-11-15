@@ -47,26 +47,15 @@ configuración. Por ejemplo:
 - «¿Cómo se usa Whitebird IA desde Discord?».
 - «¿Qué bots conoces?».
 
-src/project-knowledge.js contiene resúmenes revisados contra documentación y
-código el 2026-11-15. src/project-help.js identifica el componente y el tema y
-responde antes de seleccionar herramientas MCP o llamar al modelo. El contrato
-sigue siendo {tool: null, answer}. Los textos caben completos en Discord.
+La pipeline de Whitebird-context publica el catálogo en el servidor. El agente
+lee `WHITEBIRD_CONTEXT_PATH` al arrancar y cada diez segundos, sin acceso a GitHub. Conserva una caché persistente
+y usa `src/project-knowledge.js` como respaldo si no dispone de contexto válido.
+Las respuestas indican la revisión documental y los límites del despliegue.
+Véase [configuración y mantenimiento del contexto](docs/context-knowledge.md).
 
-El panel puede enviar project como contexto opcional en POST /ask, con uno de
-wow, recruitment, roulette, agent, agent-discord o panel. Sirve para preguntas
-como «¿Cómo funciona?» al tener seleccionado un componente. Los nombres
-explícitos tienen prioridad. En Discord, indica el bot o su comando. Cada
-pregunta se procesa por separado.
-
-Las fuentes revisadas son README.md, src/wow-sync.js y src/index.js de
-whitebird-wow-role-sync e0a4f9f; README.md, src/index.js y src/register-commands.js
-de whitebird-recruitment-bot eb9a3f9; README.md y src/register-commands.js de
-sacelean/whitebird-wow-wheel en main; README.md y docs/ai-agent.md del panel, y
-el código del propio agente. Los campos source de cada proyecto registran las
-fuentes. Revisa los resúmenes cuando cambie el comportamiento de esos proyectos.
-La instalación efectiva y los errores reales se comprueban con el diagnóstico
-del panel. Esta ayuda es un catálogo curado de funcionamiento y comandos, sin
-lectura automática de repositorios ni historial conversacional.
+El panel puede enviar `project` en POST /ask: wow, recruitment, roulette, agent,
+agent-discord o panel. Los nombres explícitos tienen prioridad. Cada pregunta
+se procesa por separado; la ayuda mantiene `{tool: null, answer}`.
 
 ## Respuestas legibles
 

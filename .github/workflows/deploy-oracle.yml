@@ -99,3 +99,9 @@ jobs:
           ssh "${opts[@]}" -p "$SSH_PORT" "$target" "mkdir -p \"\$HOME/whitebird/incoming/$release\""
           scp "${opts[@]}" -P "$SSH_PORT" agent-release.tar.gz "$target:whitebird/incoming/$release/agent-release.tar.gz"
           ssh "${opts[@]}" -p "$SSH_PORT" "$target" "bash -s -- '$release'" < whitebird-ai-agent/deploy/install-release.sh
+      - name: Record verified deployment in Whitebird-context
+        if: vars.CONTEXT_REPORT_ENABLED == 'true'
+        working-directory: whitebird-ai-agent
+        env:
+          WHITEBIRD_CONTEXT_WRITE_TOKEN: ${{ secrets.WHITEBIRD_CONTEXT_WRITE_TOKEN }}
+        run: node scripts/record-context-deployment.mjs
