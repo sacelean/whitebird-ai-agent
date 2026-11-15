@@ -56,11 +56,10 @@ el servicio parado y desactivar la integración del panel.
 
 ## Instalar el lado del panel
 
-[integrations/control-pane/](../integrations/control-pane/) contiene los archivos
-del panel afectados: `server.js`, `agent-api.js`, `diagnostics.js`, `public/index.html` y
-`public/agent.js`. Los dos archivos existentes parten del main remoto consultado
-el 2026-11-14; revisar diferencias si el panel ha cambiado antes de incorporarlos.
-No sustituir el resto del panel ni sus dependencias.
+El código del panel y sus pruebas se mantienen en el repositorio
+[Whitebird-control-pane](https://github.com/sacelean/Whitebird-control-pane).
+Instala una revisión del panel con el proxy del agente y sigue su
+[guía de integración](https://github.com/sacelean/Whitebird-control-pane/blob/main/docs/ai-agent.md).
 
 En el entorno del servicio del panel, configurar:
 
@@ -70,9 +69,9 @@ PANEL_AGENT_TOKEN=EL_MISMO_SECRETO_DE_AGENT_API_TOKEN
 ```
 
 El panel no necesita leer `agent.env` ni el almacén OAuth. Su archivo de entorno
-debe mantener permisos restringidos. Reiniciar solo el panel después de
-incorporar los archivos y configurar las variables. Un valor URL inválido impide
-arrancar; si faltan variables, el formulario indica integración sin configurar.
+debe mantener permisos restringidos. Reiniciar el panel después de configurar
+las variables. Si faltan variables o la URL es inválida, las consultas WoWAudit quedan deshabilitadas y el
+diagnóstico local del panel sigue disponible.
 La sección «Consultar al agente de IA» funciona aunque no haya bots configurados.
 Las respuestas se muestran como texto, sin interpretar HTML del modelo.
 
@@ -88,27 +87,14 @@ La calidad de la síntesis y el truncamiento histórico del modelo siguen pendie
 de validación real. La integración no añade comandos Discord ni modifica bots.
 
 
-## Diagnóstico del panel (2026-11-15)
+## Diagnóstico del panel
 
 El chat del panel admite «diagnostica el panel», «¿por qué Recruitment no
-arranca?» y «revisa los logs del agente». La implementación reside en
-Whitebird-control-pane y se incluye una copia del adaptador en
-integrations/control-pane. Usa los esquemas actuales de config.js del panel,
-incluidos agentModules y agentDiscordModules. Incorpora los cambios sobre una
-revisión actual del panel y conserva sus archivos y dependencias restantes.
+arranca?» y «revisa los logs del agente». La implementación y sus pruebas se
+mantienen en Whitebird-control-pane. Consulta el
+[alcance del diagnóstico](https://github.com/sacelean/Whitebird-control-pane/blob/main/docs/ai-agent.md).
 
-Los diagnósticos se resuelven en el backend del panel con configuración guardada,
-comparaciones de conexiones, metadatos de archivos, comandos fijos de lectura y
-/health local. Funcionan aunque el agente o el modelo estén caídos. Las consultas
-WoWAudit conservan el flujo /ask existente. La respuesta sigue {tool, answer}.
-
-El navegador recibe resultados y pasos de corrección, con tool=panel_diagnostics.
-Los valores de configuración, logs originales y errores internos permanecen en
-el backend. Los logs se clasifican por patrones reconocidos en las últimas 60
-líneas, con límite de cinco segundos y 128 KiB por comando. Los permisos reales
-de Discord, la vigencia OAuth y cambios guardados pendientes de aplicar requieren
-comprobación adicional. Los errores de logs pueden ser históricos.
-
-Pruebas locales del panel: validación, secretos, comandos acotados, conexiones,
-exclusión de diagnósticos simultáneos y recorrido HTTP con CSRF y agente ausente.
-Pendiente de verificación en la VM con sus permisos, servicios y datos reales.
+El diagnóstico se ejecuta en el backend del panel y funciona aunque el agente o
+el modelo estén caídos. Las consultas WoWAudit utilizan la API /ask de este
+repositorio. La vigencia OAuth y la calidad de las respuestas requieren una
+consulta real.
