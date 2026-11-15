@@ -18,3 +18,5 @@ jobs:
       - run: node scripts/publish-knowledge.mjs --validate
       - run: node --test scripts/check-knowledge.mjs
 
+      - name: Verify bot data queries and HTTP/Discord routing
+        run: node --test test/bot-data.test.js test/project-help.test.js

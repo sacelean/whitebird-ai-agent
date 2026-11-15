@@ -1,4 +1,4 @@
-const allowedTools = new Set(['list_projects', 'read_config', 'prepare_config', 'prepare_restart', 'runtime_state', 'read_logs', 'discord_permissions', 'diagnose']);
+const allowedTools = new Set(['recruitment_summary', 'recruitment_recent', 'wow_links', 'wow_sync_history', 'wow_cauldrons', 'wow_bis_summary', 'wow_promotions', 'list_projects', 'read_config', 'prepare_config', 'prepare_restart', 'runtime_state', 'read_logs', 'discord_permissions', 'diagnose']);
 
 export function createPanelClient({ url = process.env.PANEL_TOOLS_URL || 'http://127.0.0.1:3080', token = process.env.PANEL_TOOLS_TOKEN, fetchFn = fetch } = {}) {
   if (!url || !token) return null;

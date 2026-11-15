@@ -138,3 +138,10 @@ el flujo de revisión. POST /actions del agente procesa confirmaciones autentica
 ## Documentación del chatbot
 
 Mantener [docs/knowledge.json](docs/knowledge.json) junto con cada cambio de comportamiento. La pipeline publica la versión verificada en este mismo repositorio y Whitebird-context la recoge con acceso de lectura. Ver [flujo y comprobaciones](docs/context-publication.md).
+
+## Consultas de registros de bots
+
+El agente consulta decisiones de Recruitment y vinculaciones, cambios de roles,
+calderos, listas BIS y felicitaciones de WoW Sync mediante el panel en solo lectura.
+«Cuántos applies hemos aceptado» consulta SQLite; «cómo se acepta un apply»
+conserva la ayuda. Véase [herramientas, ejemplos y activación](docs/bot-data.md).
